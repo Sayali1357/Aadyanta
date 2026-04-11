@@ -40,7 +40,8 @@ const Header = () => {
   };
 
   return (
-    <header className="sticky top-0 z-50 w-full border-b border-border/50 bg-card/80 backdrop-blur-lg">
+    <header className="sticky top-0 z-50 w-full"
+      style={{ borderBottom: '1px solid hsl(217 97% 58% / 0.15)', background: 'hsl(222 60% 3% / 0.85)', backdropFilter: 'blur(16px)', WebkitBackdropFilter: 'blur(16px)' }}>
       <div className="container flex h-16 items-center justify-between">
         <Link to="/" className="flex items-center gap-3 group">
           <img
@@ -48,8 +49,8 @@ const Header = () => {
             alt="CareerLaunch AI Logo"
             className="h-10 w-10 object-contain transition-transform duration-300 group-hover:scale-110"
           />
-          <span className="text-xl font-bold tracking-tight">
-            Career<span className="gradient-text">Launch</span> AI
+          <span className="text-xl font-bold tracking-tight text-white">
+            Career<span style={{ background: 'linear-gradient(135deg, hsl(217 97% 65%), hsl(195 100% 55%))', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text' }}>Launch</span> AI
           </span>
         </Link>
 
@@ -121,7 +122,8 @@ const Header = () => {
 
       {/* Mobile Navigation */}
       {isMenuOpen && (
-        <nav className="md:hidden border-t border-border bg-card p-4 animate-slide-down">
+        <nav className="md:hidden border-t p-4 animate-slide-down"
+          style={{ borderColor: 'hsl(217 97% 58% / 0.15)', background: 'hsl(222 60% 4%)' }}>
           <div className="flex flex-col gap-2">
             {navLinks.map((link) => (
               <Link key={link.path} to={link.path} onClick={() => setIsMenuOpen(false)}>
