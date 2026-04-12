@@ -4,8 +4,9 @@ const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const { body, validationResult } = require('express-validator');
 const User = require('../models/User');
+const mongoose = require('mongoose');
 
-// Registration
+// Enhanced Registration with College Info and ACID Transaction
 router.post(
     '/register',
     [
@@ -44,6 +45,9 @@ router.post(
             });
         }
 
+        const session = await mongoose.startSession();
+        session.startTransaction();
+
         try {
             const {
                 name,
@@ -57,9 +61,10 @@ router.post(
                 preferredLanguage,
             } = req.body;
 
-            // Check if user exists
-            const existingUser = await User.findOne({ email });
+            // Check if user exists (within transaction)
+            const existingUser = await User.findOne({ email }).session(session);
             if (existingUser) {
+                await session.abortTransaction();
                 return res.status(400).json({ message: 'Email already registered' });
             }
 
@@ -86,7 +91,10 @@ router.post(
                 createdAt: new Date(),
             });
 
-            await user.save();
+            await user.save({ session });
+
+            // Commit transaction
+            await session.commitTransaction();
 
             // Generate JWT token
             const token = jwt.sign(
@@ -110,13 +118,16 @@ router.post(
                 },
             });
         } catch (error) {
+            await session.abortTransaction();
             console.error('Register error:', error);
             res.status(500).json({ message: 'Server error during registration' });
+        } finally {
+            session.endSession();
         }
     }
 );
 
-// Login
+// Login (unchanged but with better error messages)
 router.post(
     '/login',
     [

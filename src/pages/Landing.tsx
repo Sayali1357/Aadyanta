@@ -3,26 +3,25 @@ import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import CareerDomainSelector from '@/components/career/CareerDomainSelector';
 import { CareerDomain } from '@/types/career';
-import { ArrowRight, Sparkles, Target, TrendingUp, Award } from 'lucide-react';
+import { ArrowRight, Sparkles, Target, TrendingUp, Award, Zap, Star, Globe } from 'lucide-react';
 
 const Landing = () => {
   const navigate = useNavigate();
   const [showDomainSelector, setShowDomainSelector] = useState(false);
 
   const handleDomainSelect = (domain: CareerDomain) => {
-    // Store selected domain and navigate to assessment
     localStorage.setItem('selectedDomain', domain);
     navigate('/assessment');
   };
 
   if (showDomainSelector) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-blue-50 via-purple-50 to-pink-50">
+      <div className="min-h-screen" style={{ background: 'linear-gradient(135deg, hsl(222 60% 3%) 0%, hsl(218 80% 8%) 50%, hsl(222 60% 3%) 100%)' }}>
         <div className="container py-8">
           <Button
             variant="outline"
             onClick={() => setShowDomainSelector(false)}
-            className="mb-4"
+            className="mb-4 border-blue-500/40 text-blue-400 hover:bg-blue-500/10"
           >
             ← Back
           </Button>
@@ -33,29 +32,48 @@ const Landing = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-purple-50 to-pink-50">
+    <div className="min-h-screen overflow-hidden" style={{ background: 'hsl(222 60% 3%)' }}>
+
+      {/* Ambient background glows */}
+      <div className="fixed inset-0 pointer-events-none overflow-hidden">
+        <div className="absolute top-[-20%] left-1/2 -translate-x-1/2 w-[800px] h-[500px] rounded-full opacity-20"
+          style={{ background: 'radial-gradient(ellipse, hsl(217 97% 58%) 0%, transparent 70%)', filter: 'blur(60px)' }} />
+        <div className="absolute bottom-[20%] right-[-10%] w-[500px] h-[400px] rounded-full opacity-10"
+          style={{ background: 'radial-gradient(ellipse, hsl(195 100% 50%) 0%, transparent 70%)', filter: 'blur(80px)' }} />
+        <div className="absolute top-[40%] left-[-5%] w-[400px] h-[300px] rounded-full opacity-8"
+          style={{ background: 'radial-gradient(ellipse, hsl(240 80% 40%) 0%, transparent 70%)', filter: 'blur(60px)' }} />
+      </div>
+
       {/* Hero Section */}
-      <section className="container px-4 py-16 md:py-24">
+      <section className="relative container px-4 py-20 md:py-32">
         <div className="max-w-4xl mx-auto text-center">
-          <div className="inline-flex items-center gap-2 bg-primary/10 text-primary px-4 py-2 rounded-full mb-6">
-            <Sparkles className="w-4 h-4" />
-            <span className="text-sm font-semibold">AI-Powered Career Guidance</span>
+
+          {/* Badge */}
+          <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full mb-8 border border-blue-500/30 animate-fade-in"
+            style={{ background: 'hsl(217 97% 58% / 0.1)', backdropFilter: 'blur(8px)' }}>
+            <Sparkles className="w-4 h-4 text-blue-400" />
+            <span className="text-sm font-semibold text-blue-300">AI-Powered Career Guidance</span>
+            <Zap className="w-3 h-3 text-cyan-400" />
           </div>
 
-          <h1 className="text-4xl md:text-6xl lg:text-7xl font-bold mb-6 bg-gradient-to-r from-blue-600 via-purple-600 to-pink-600 bg-clip-text text-transparent">
-            Launch Your Dream Career
+          {/* Headline */}
+          <h1 className="text-5xl md:text-7xl font-bold mb-6 leading-tight animate-slide-up"
+            style={{ background: 'linear-gradient(135deg, #ffffff 0%, hsl(217 97% 78%) 40%, hsl(195 100% 65%) 70%, hsl(217 97% 58%) 100%)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text' }}>
+            Launch Your<br />Dream Career
           </h1>
 
-          <p className="text-lg md:text-xl text-muted-foreground mb-8 max-w-2xl mx-auto">
+          <p className="text-lg md:text-xl text-slate-400 mb-10 max-w-2xl mx-auto leading-relaxed animate-fade-in">
             AI-powered platform that helps you discover the perfect career path,
-            build job-ready skills, and access curated free resources - all
-            tailored for Indian students
+            build job-ready skills, and access curated free resources — all
+            tailored for Indian students.
           </p>
 
-          <div className="flex flex-col sm:flex-row gap-4 justify-center">
+          {/* CTA Buttons */}
+          <div className="flex flex-col sm:flex-row gap-4 justify-center animate-slide-up">
             <Button
               size="lg"
-              className="text-lg px-8 py-6 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700"
+              className="text-lg px-8 py-6 font-semibold animate-glow-pulse"
+              style={{ background: 'linear-gradient(135deg, hsl(217 97% 58%), hsl(195 100% 45%))', border: 'none', boxShadow: '0 0 30px -5px hsl(217 97% 58% / 0.6)' }}
               onClick={() => setShowDomainSelector(true)}
             >
               Get Started Free
@@ -65,7 +83,7 @@ const Landing = () => {
             <Button
               size="lg"
               variant="outline"
-              className="text-lg px-8 py-6"
+              className="text-lg px-8 py-6 border-blue-500/40 text-blue-300 hover:bg-blue-500/10 hover:border-blue-400/60"
               onClick={() => navigate('/assessment')}
             >
               Take Assessment
@@ -73,120 +91,112 @@ const Landing = () => {
           </div>
 
           {/* Stats */}
-          <div className="mt-16 grid grid-cols-2 md:grid-cols-4 gap-6">
-            <div className="text-center">
-              <div className="text-3xl font-bold text-primary">50+</div>
-              <div className="text-sm text-muted-foreground">Career Paths</div>
-            </div>
-            <div className="text-center">
-              <div className="text-3xl font-bold text-purple-600">100%</div>
-              <div className="text-sm text-muted-foreground">Free Resources</div>
-            </div>
-            <div className="text-center">
-              <div className="text-3xl font-bold text-pink-600">AI</div>
-              <div className="text-sm text-muted-foreground">Powered</div>
-            </div>
-            <div className="text-center">
-              <div className="text-3xl font-bold text-blue-600">India</div>
-              <div className="text-sm text-muted-foreground">Focused</div>
-            </div>
+          <div className="mt-20 grid grid-cols-2 md:grid-cols-4 gap-6">
+            {[
+              { value: '50+', label: 'Career Paths', color: 'hsl(217 97% 65%)' },
+              { value: '100%', label: 'Free Resources', color: 'hsl(195 100% 55%)' },
+              { value: 'AI', label: 'Powered', color: 'hsl(240 80% 70%)' },
+              { value: 'India', label: 'Focused', color: 'hsl(217 97% 65%)' },
+            ].map((stat, i) => (
+              <div key={i} className="text-center p-4 rounded-xl border border-blue-500/15 animate-fade-in"
+                style={{ background: 'hsl(217 97% 58% / 0.05)', backdropFilter: 'blur(8px)', animationDelay: `${i * 0.1}s` }}>
+                <div className="text-3xl font-bold mb-1" style={{ color: stat.color }}>{stat.value}</div>
+                <div className="text-sm text-slate-500">{stat.label}</div>
+              </div>
+            ))}
           </div>
         </div>
       </section>
 
       {/* Features Section */}
-      <section className="container px-4 py-16">
+      <section className="relative container px-4 py-20">
         <div className="max-w-6xl mx-auto">
-          <h2 className="text-3xl md:text-4xl font-bold text-center mb-12">
-            Everything You Need to Succeed
-          </h2>
+          <div className="text-center mb-14">
+            <h2 className="text-3xl md:text-4xl font-bold text-white mb-3">
+              Everything You Need to{' '}
+              <span style={{ background: 'linear-gradient(135deg, hsl(217 97% 65%), hsl(195 100% 55%))', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text' }}>
+                Succeed
+              </span>
+            </h2>
+            <p className="text-slate-400">Three pillars of your career transformation</p>
+          </div>
 
-          <div className="grid md:grid-cols-3 gap-8">
-            <div className="bg-white p-6 rounded-xl shadow-lg border border-blue-100">
-              <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center mb-4">
-                <Target className="w-6 h-6 text-blue-600" />
+          <div className="grid md:grid-cols-3 gap-6">
+            {[
+              {
+                icon: Target,
+                title: 'AI Career Assessment',
+                desc: 'Take our comprehensive 15-question assessment powered by Google Gemini to discover careers that match your interests, aptitude, and goals.',
+                glow: 'hsl(217 97% 58%)',
+                border: 'hsl(217 97% 58% / 0.25)',
+              },
+              {
+                icon: TrendingUp,
+                title: 'Personalized Roadmaps',
+                desc: 'Get customized learning roadmaps with domain-specific resources: GFG for tech, Behance for design, and more curated platforms.',
+                glow: 'hsl(195 100% 50%)',
+                border: 'hsl(195 100% 50% / 0.25)',
+              },
+              {
+                icon: Award,
+                title: 'Track Progress',
+                desc: 'Monitor your learning journey with gamified progress tracking, streaks, and auto-generated portfolio from your skills.',
+                glow: 'hsl(240 80% 65%)',
+                border: 'hsl(240 80% 65% / 0.25)',
+              },
+            ].map(({ icon: Icon, title, desc, glow, border }, i) => (
+              <div key={i} className="card-hover rounded-2xl p-6 cursor-pointer"
+                style={{ background: 'hsl(220 55% 6%)', border: `1px solid ${border}`, boxShadow: `0 4px 24px -8px ${glow}30` }}>
+                <div className="w-12 h-12 rounded-xl flex items-center justify-center mb-5"
+                  style={{ background: `${glow}20`, border: `1px solid ${border}` }}>
+                  <Icon className="w-6 h-6" style={{ color: glow }} />
+                </div>
+                <h3 className="text-xl font-bold mb-3 text-white">{title}</h3>
+                <p className="text-slate-400 leading-relaxed text-sm">{desc}</p>
               </div>
-              <h3 className="text-xl font-bold mb-2">AI Career Assessment</h3>
-              <p className="text-muted-foreground">
-                Take our comprehensive 15-question assessment powered by Google Gemini
-                to discover careers that match your interests, aptitude, and goals
-              </p>
-            </div>
-
-            <div className="bg-white p-6 rounded-xl shadow-lg border border-purple-100">
-              <div className="w-12 h-12 bg-purple-100 rounded-lg flex items-center justify-center mb-4">
-                <TrendingUp className="w-6 h-6 text-purple-600" />
-              </div>
-              <h3 className="text-xl font-bold mb-2">Personalized Roadmaps</h3>
-              <p className="text-muted-foreground">
-                Get customized learning roadmaps with domain-specific resources:
-                GFG for tech, Behance for design, and more
-              </p>
-            </div>
-
-            <div className="bg-white p-6 rounded-xl shadow-lg border border-pink-100">
-              <div className="w-12 h-12 bg-pink-100 rounded-lg flex items-center justify-center mb-4">
-                <Award className="w-6 h-6 text-pink-600" />
-              </div>
-              <h3 className="text-xl font-bold mb-2">Track Progress</h3>
-              <p className="text-muted-foreground">
-                Monitor your learning journey with gamified progress tracking,
-                streaks, and auto-generated portfolio from your skills
-              </p>
-            </div>
+            ))}
           </div>
         </div>
       </section>
 
       {/* Career Domains Preview */}
-      <section className="container px-4 py-16 bg-white/50">
+      <section className="relative container px-4 py-20">
         <div className="max-w-6xl mx-auto">
-          <div className="text-center mb-12">
-            <h2 className="text-3xl md:text-4xl font-bold mb-4">
-              Explore Career Domains
+          <div className="text-center mb-14">
+            <h2 className="text-3xl md:text-4xl font-bold text-white mb-3">
+              Explore Career{' '}
+              <span style={{ background: 'linear-gradient(135deg, hsl(217 97% 65%), hsl(195 100% 55%))', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text' }}>
+                Domains
+              </span>
             </h2>
-            <p className="text-lg text-muted-foreground">
-              Choose from technology, design, business, or healthcare paths
-            </p>
+            <p className="text-slate-400">Choose from technology, design, business, or healthcare paths</p>
           </div>
 
-          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
-            <div className="bg-gradient-to-br from-blue-500 to-cyan-500 p-6 rounded-xl text-white">
-              <div className="text-4xl mb-3">💻</div>
-              <h3 className="text-xl font-bold mb-2">Technology</h3>
-              <p className="text-sm opacity-90">
-                Backend, Frontend, Data Science, ML & more
-              </p>
-            </div>
-
-            <div className="bg-gradient-to-br from-purple-500 to-pink-500 p-6 rounded-xl text-white">
-              <div className="text-4xl mb-3">🎨</div>
-              <h3 className="text-xl font-bold mb-2">Design</h3>
-              <p className="text-sm opacity-90">
-                UI/UX, Graphic Design, Product Design
-              </p>
-            </div>
-
-            <div className="bg-gradient-to-br from-green-500 to-teal-500 p-6 rounded-xl text-white">
-              <div className="text-4xl mb-3">📊</div>
-              <h3 className="text-xl font-bold mb-2">Business</h3>
-              <p className="text-sm opacity-90">
-                Product Manager, Analyst, Marketing
-              </p>
-            </div>
-
-            <div className="bg-gradient-to-br from-red-500 to-orange-500 p-6 rounded-xl text-white">
-              <div className="text-4xl mb-3">⚕️</div>
-              <h3 className="text-xl font-bold mb-2">Healthcare</h3>
-              <p className="text-sm opacity-90">
-                Medical Coding, Health Analytics
-              </p>
-            </div>
+          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-5">
+            {[
+              { emoji: '💻', title: 'Technology', desc: 'Backend, Frontend, Data Science, ML & more', from: 'hsl(217 97% 40%)', to: 'hsl(195 100% 30%)' },
+              { emoji: '🎨', title: 'Design', desc: 'UI/UX, Graphic Design, Product Design', from: 'hsl(270 80% 40%)', to: 'hsl(217 97% 35%)' },
+              { emoji: '📊', title: 'Business', desc: 'Product Manager, Analyst, Marketing', from: 'hsl(217 97% 35%)', to: 'hsl(240 80% 30%)' },
+              { emoji: '⚕️', title: 'Healthcare', desc: 'Medical Coding, Health Analytics', from: 'hsl(195 100% 28%)', to: 'hsl(217 97% 40%)' },
+            ].map((card, i) => (
+              <div key={i} className="card-hover p-6 rounded-2xl text-white cursor-pointer relative overflow-hidden"
+                style={{ background: `linear-gradient(135deg, ${card.from}, ${card.to})`, border: '1px solid hsl(217 97% 58% / 0.2)' }}>
+                <div className="absolute inset-0 opacity-30"
+                  style={{ background: 'radial-gradient(ellipse at top right, hsl(210 40% 96% / 0.15), transparent 60%)' }} />
+                <div className="relative">
+                  <div className="text-4xl mb-3">{card.emoji}</div>
+                  <h3 className="text-xl font-bold mb-2">{card.title}</h3>
+                  <p className="text-sm opacity-80">{card.desc}</p>
+                </div>
+              </div>
+            ))}
           </div>
 
-          <div className="text-center mt-8">
+          <div className="text-center mt-10">
             <Button
               size="lg"
+              className="font-semibold px-8"
+              style={{ background: 'linear-gradient(135deg, hsl(217 97% 58%), hsl(195 100% 45%))', border: 'none', boxShadow: '0 0 24px -5px hsl(217 97% 58% / 0.45)' }}
               onClick={() => setShowDomainSelector(true)}
             >
               Explore All Domains
@@ -197,80 +207,60 @@ const Landing = () => {
       </section>
 
       {/* How It Works */}
-      <section className="container px-4 py-16">
+      <section className="relative container px-4 py-20">
         <div className="max-w-4xl mx-auto">
-          <h2 className="text-3xl md:text-4xl font-bold text-center mb-12">
-            How It Works
+          <h2 className="text-3xl md:text-4xl font-bold text-center mb-14 text-white">
+            How It{' '}
+            <span style={{ background: 'linear-gradient(135deg, hsl(217 97% 65%), hsl(195 100% 55%))', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text' }}>
+              Works
+            </span>
           </h2>
 
-          <div className="space-y-8">
-            <div className="flex gap-4">
-              <div className="flex-shrink-0 w-10 h-10 bg-blue-600 text-white rounded-full flex items-center justify-center font-bold">
-                1
+          <div className="space-y-6">
+            {[
+              { num: '1', title: 'Take the Assessment', desc: 'Answer 15-20 questions about your interests, aptitude, skills, and goals. Our AI analyzes your profile to recommend the best career matches.', color: 'hsl(217 97% 58%)' },
+              { num: '2', title: 'Select Your Career', desc: 'Review recommended careers with detailed fit scores, market outlook, and salary information. Choose the one that excites you most.', color: 'hsl(195 100% 50%)' },
+              { num: '3', title: 'Follow Your Roadmap', desc: 'Get a personalized learning roadmap with curated free resources from domain-specific platforms like GFG, YouTube, Coursera, and more.', color: 'hsl(240 80% 65%)' },
+              { num: '4', title: 'Track & Build', desc: 'Mark topics complete, track your progress, build your skills portfolio, and export your resume when you\'re job-ready.', color: 'hsl(155 70% 50%)' },
+            ].map((step, i) => (
+              <div key={i} className="flex gap-5 p-5 rounded-2xl card-hover"
+                style={{ background: 'hsl(220 55% 6%)', border: '1px solid hsl(217 97% 58% / 0.12)' }}>
+                <div className="flex-shrink-0 w-11 h-11 rounded-full flex items-center justify-center font-bold text-white text-sm"
+                  style={{ background: `linear-gradient(135deg, ${step.color}, ${step.color}80)`, boxShadow: `0 0 16px -4px ${step.color}80` }}>
+                  {step.num}
+                </div>
+                <div>
+                  <h3 className="text-lg font-bold mb-1 text-white">{step.title}</h3>
+                  <p className="text-slate-400 text-sm leading-relaxed">{step.desc}</p>
+                </div>
               </div>
-              <div>
-                <h3 className="text-xl font-bold mb-2">Take the Assessment</h3>
-                <p className="text-muted-foreground">
-                  Answer 15-20 questions about your interests, aptitude, skills, and goals.
-                  Our AI analyzes your profile to recommend the best career matches.
-                </p>
-              </div>
-            </div>
-
-            <div className="flex gap-4">
-              <div className="flex-shrink-0 w-10 h-10 bg-purple-600 text-white rounded-full flex items-center justify-center font-bold">
-                2
-              </div>
-              <div>
-                <h3 className="text-xl font-bold mb-2">Select Your Career</h3>
-                <p className="text-muted-foreground">
-                  Review recommended careers with detailed fit scores, market outlook,
-                  and salary information. Choose the one that excites you most.
-                </p>
-              </div>
-            </div>
-
-            <div className="flex gap-4">
-              <div className="flex-shrink-0 w-10 h-10 bg-pink-600 text-white rounded-full flex items-center justify-center font-bold">
-                3
-              </div>
-              <div>
-                <h3 className="text-xl font-bold mb-2">Follow Your Roadmap</h3>
-                <p className="text-muted-foreground">
-                  Get a personalized learning roadmap with curated free resources from
-                  domain-specific platforms like GFG, YouTube, Coursera, and more.
-                </p>
-              </div>
-            </div>
-
-            <div className="flex gap-4">
-              <div className="flex-shrink-0 w-10 h-10 bg-green-600 text-white rounded-full flex items-center justify-center font-bold">
-                4
-              </div>
-              <div>
-                <h3 className="text-xl font-bold mb-2">Track & Build</h3>
-                <p className="text-muted-foreground">
-                  Mark topics complete, track your progress, build your skills portfolio,
-                  and export your resume when you're job-ready.
-                </p>
-              </div>
-            </div>
+            ))}
           </div>
         </div>
       </section>
 
-      {/* CTA */}
-      <section className="container px-4 py-16">
-        <div className="max-w-4xl mx-auto bg-gradient-to-r from-blue-600 to-purple-600 rounded-2xl p-8 md:p-12 text-center text-white">
-          <h2 className="text-3xl md:text-4xl font-bold mb-4">
+      {/* CTA Banner */}
+      <section className="relative container px-4 py-16 pb-24">
+        <div className="max-w-4xl mx-auto rounded-3xl p-10 md:p-14 text-center relative overflow-hidden"
+          style={{ background: 'linear-gradient(135deg, hsl(217 97% 18%) 0%, hsl(240 80% 12%) 50%, hsl(222 60% 6%) 100%)', border: '1px solid hsl(217 97% 58% / 0.3)', boxShadow: '0 0 80px -20px hsl(217 97% 58% / 0.4)' }}>
+
+          {/* Inner glow top */}
+          <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[400px] h-[2px]"
+            style={{ background: 'linear-gradient(90deg, transparent, hsl(217 97% 58%), transparent)' }} />
+
+          <div className="flex justify-center mb-6">
+            <Star className="w-8 h-8 text-blue-400 animate-pulse" />
+          </div>
+          <h2 className="text-3xl md:text-4xl font-bold mb-4 text-white">
             Ready to Launch Your Career?
           </h2>
-          <p className="text-lg mb-8 opacity-90">
+          <p className="text-lg mb-8 text-slate-400">
             Join thousands of students discovering their perfect career path
           </p>
           <Button
             size="lg"
-            className="bg-white text-blue-600 hover:bg-gray-100"
+            className="text-base font-semibold px-10 py-6"
+            style={{ background: 'linear-gradient(135deg, hsl(217 97% 58%), hsl(195 100% 45%))', border: 'none', boxShadow: '0 0 30px -5px hsl(217 97% 58% / 0.6)' }}
             onClick={() => navigate('/assessment')}
           >
             Start Your Journey Now
