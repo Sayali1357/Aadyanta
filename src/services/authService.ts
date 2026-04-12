@@ -1,7 +1,7 @@
 import axios from 'axios';
 import { UserProfile } from '@/types/career';
 
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001/api';
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000/api';
 
 interface LoginCredentials {
     email: string;
@@ -40,7 +40,9 @@ class AuthService {
 
             return response.data;
         } catch (error: any) {
-            throw new Error(error.response?.data?.message || 'Registration failed');
+            const message = error.response?.data?.message || 'Registration failed';
+            const status = error.response?.status;
+            throw new Error(status ? `${status}: ${message}` : message);
         }
     }
 
@@ -57,7 +59,9 @@ class AuthService {
 
             return response.data;
         } catch (error: any) {
-            throw new Error(error.response?.data?.message || 'Login failed');
+            const message = error.response?.data?.message || 'Login failed';
+            const status = error.response?.status;
+            throw new Error(status ? `${status}: ${message}` : message);
         }
     }
 
@@ -124,7 +128,9 @@ class AuthService {
             });
             return response.data;
         } catch (error: any) {
-            throw new Error(error.response?.data?.message || 'Failed to fetch user profile');
+            const message = error.response?.data?.message || 'Failed to fetch user profile';
+            const status = error.response?.status;
+            throw new Error(status ? `${status}: ${message}` : message);
         }
     }
 

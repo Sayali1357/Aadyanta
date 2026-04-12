@@ -35,10 +35,13 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         try {
             const profile = await authService.getUserProfile();
             setUserProfile(profile);
-        } catch (error) {
+        } catch (error: any) {
             console.error('Failed to load user profile:', error);
-            // If profile fetch fails, logout user
-            logout();
+            // Only logout if it's an auth error (401), not for other failures
+            if (error.message?.includes('401') || error.message?.includes('Invalid token') || error.message?.includes('Token expired')) {
+                logout();
+            }
+            // For other errors (network, server), keep user logged in
         } finally {
             setIsLoading(false);
         }
@@ -61,7 +64,10 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         try {
             const response = await authService.register({ name, email, password });
             setUser(response.user);
-            await loadUserProfile();
+            // Don't block on profile load for new registrations
+            // Profile may be minimal right after signup
+            loadUserProfile().catch(() => {});
+            setIsLoading(false);
         } catch (error) {
             setIsLoading(false);
             throw error;

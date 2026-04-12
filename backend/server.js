@@ -36,18 +36,25 @@ const apiLimiter = rateLimit({
     legacyHeaders: false,
 });
 
-// Rate Limiting - Auth Routes (stricter)
-const authLimiter = rateLimit({
+// Rate Limiting - Login (stricter)
+const loginLimiter = rateLimit({
     windowMs: 15 * 60 * 1000, // 15 minutes
-    max: 5, // 5 attempts per 15 minutes
+    max: 10, // 10 login attempts per 15 minutes
     message: 'Too many login attempts, please try again after 15 minutes.',
     skipSuccessfulRequests: true, // Don't count successful requests
 });
 
+// Rate Limiting - Registration (moderate)
+const registerLimiter = rateLimit({
+    windowMs: 15 * 60 * 1000, // 15 minutes
+    max: 20, // 20 registration attempts per 15 minutes
+    message: 'Too many registration attempts, please try again later.',
+});
+
 // Apply rate limiters
 app.use('/api/', apiLimiter);
-app.use('/api/auth/login', authLimiter);
-app.use('/api/auth/register', authLimiter);
+app.use('/api/auth/login', loginLimiter);
+app.use('/api/auth/register', registerLimiter);
 
 // Routes
 app.use('/api/auth', require('./routes/auth'));
