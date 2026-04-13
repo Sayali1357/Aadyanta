@@ -1,4 +1,0 @@
-project_id = "kmydrejdtsmnjviqfosn"
-
-[functions.career-recommend]
-verify_jwt = false
