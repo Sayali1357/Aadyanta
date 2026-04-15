@@ -53,6 +53,7 @@ app.use('/api/auth/register', authLimiter);
 app.use('/api/auth', require('./routes/auth'));
 app.use('/api/user', require('./routes/user'));
 app.use('/api/roadmap', require('./routes/roadmap'));
+app.use('/api/interview', require('./routes/interviewRoutes'));
 
 // MongoDB Connection with retry logic
 const connectDB = async () => {

@@ -219,8 +219,11 @@ const Assessment = () => {
   const relevantSkills = getRelevantSkills();
 
   return (
-    <div className="min-h-screen py-8 bg-gradient-to-br from-blue-50 via-white to-purple-50">
-      <div className="container max-w-3xl">
+    <div className="min-h-screen py-8 relative overflow-hidden">
+      {/* Background decorations */}
+      <div className="absolute top-20 left-10 w-72 h-72 bg-primary/20 rounded-full blur-3xl animate-pulse-slow pointer-events-none"></div>
+      <div className="absolute bottom-20 right-10 w-96 h-96 bg-indigo-500/10 rounded-full blur-3xl animate-pulse-slow pointer-events-none" style={{ animationDelay: '2s' }}></div>
+      <div className="container max-w-3xl relative z-10">
         {/* Progress Header */}
         <div className="mb-8">
           <div className="flex items-center justify-between mb-4">
@@ -250,7 +253,7 @@ const Assessment = () => {
 
         {/* Step 1: Education & Interests */}
         {step === 1 && (
-          <div className="bg-white rounded-2xl border border-border shadow-lg p-6 md:p-8 animate-fade-in">
+          <div className="glass-card rounded-2xl p-6 md:p-8 animate-slide-up hover:shadow-glow transition-all duration-500">
             <h2 className="text-xl font-semibold mb-6">Tell us about yourself</h2>
 
             <div className="space-y-6">
@@ -305,7 +308,7 @@ const Assessment = () => {
 
         {/* Step 2: Skills & Goals */}
         {step === 2 && (
-          <div className="bg-white rounded-2xl border border-border shadow-lg p-6 md:p-8 animate-fade-in">
+          <div className="glass-card rounded-2xl p-6 md:p-8 animate-slide-up hover:shadow-glow transition-all duration-500">
             <h2 className="text-xl font-semibond mb-6">Skills & Career Goals</h2>
 
             <div className="space-y-6">
@@ -368,14 +371,15 @@ const Assessment = () => {
               </p>
             </div>
 
-            <div className="grid md:grid-cols-2 gap-6 mb-8">
-              {careers.map((career) => (
+            <div className="grid md:grid-cols-2 gap-6 mb-8 group">
+              {careers.map((career, index) => (
                 <div
                   key={career.id}
                   onClick={() => handleCareerSelect(career.id)}
-                  className={`cursor-pointer p-6 rounded-xl border-2 transition-all ${selectedCareer === career.id
-                    ? 'border-primary bg-primary/5'
-                    : 'border-border hover:border-primary/50'
+                  style={{ animationDelay: `${index * 150}ms` }}
+                  className={`cursor-pointer p-6 rounded-xl border transition-all duration-300 animate-slide-up card-hover ${selectedCareer === career.id
+                    ? 'border-primary bg-primary/10 shadow-glow'
+                    : 'border-border/50 bg-secondary/20 hover:border-primary/50'
                     }`}
                 >
                   <h3 className="text-lg font-semibold mb-2">{career.name}</h3>

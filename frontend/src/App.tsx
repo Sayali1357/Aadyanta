@@ -13,6 +13,8 @@ import Dashboard from "./pages/Dashboard";
 import Roadmap from "./pages/Roadmap";
 import Topic from "./pages/Topic";
 import Login from "./pages/Login";
+import Interview from "./pages/Interview";
+import GapAnalysis from "./pages/GapAnalysis";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -24,7 +26,13 @@ const App = () => (
       <Sonner />
       <BrowserRouter>
         <AuthProvider>
-          <div className="min-h-screen flex flex-col">
+          <div className="min-h-screen flex flex-col relative z-0">
+            {/* SaaS Premium Futuristic Background */}
+            <div className="fixed inset-0 z-[-1] bg-background overflow-hidden pointer-events-none">
+              <div className="absolute top-[-20%] left-[-10%] w-[50vw] h-[50vw] rounded-full bg-primary/20 blur-[120px] mix-blend-screen animate-pulse-slow object-cover" />
+              <div className="absolute bottom-[-20%] right-[-10%] w-[40vw] h-[40vw] rounded-full bg-accent/15 blur-[100px] mix-blend-screen" />
+            </div>
+            
             <Header />
             <main className="flex-1">
               <Routes>
@@ -60,6 +68,22 @@ const App = () => (
                   element={
                     <ProtectedRoute>
                       <Topic />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/interview"
+                  element={
+                    <ProtectedRoute>
+                      <Interview />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/gap-analysis"
+                  element={
+                    <ProtectedRoute>
+                      <GapAnalysis />
                     </ProtectedRoute>
                   }
                 />

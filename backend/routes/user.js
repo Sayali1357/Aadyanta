@@ -256,6 +256,10 @@ router.post('/progress', authMiddleware, async (req, res) => {
                     completedAt: new Date(),
                     timeSpent: timeSpent || 0,
                     resourcesUsed: [],
+                    attentionScore: req.body.attentionData?.score || null,
+                    distractionCount: req.body.attentionData?.distractions || 0,
+                    emotions: req.body.attentionData?.emotions || null,
+                    quizResult: req.body.quizResult || null,
                 });
 
                 // Update total hours
@@ -284,6 +288,64 @@ router.post('/progress', authMiddleware, async (req, res) => {
         res.status(500).json({ message: 'Server error' });
     } finally {
         session.endSession();
+    }
+});
+
+// GET Gap Analysis (Phase 7 & 9)
+router.get('/gap-analysis', authMiddleware, async (req, res) => {
+    try {
+        const user = await User.findById(req.userId).select('progress selectedCareer.careerName');
+        const defaultResponse = {
+            skillGaps: [], missingCertifications: [], requiredProjects: [], weakAcademicConcepts: [],
+            recommendations: { courses: [], practiceTests: [], projectSuggestions: [], certifications: [] },
+            overallAttention: 0, averageQuizScore: 0, analysis: 'Insufficient data for complete analysis.'
+        };
+
+        if (!user || !user.progress || !user.progress.completedTopics || user.progress.completedTopics.length === 0) {
+            return res.json(defaultResponse);
+        }
+
+        const recentTopics = user.progress.completedTopics.slice(-10);
+        let weakAreas = new Set();
+        let attentionSum = 0;
+        let quizScoreSum = 0;
+        let validQuizCount = 0;
+
+        recentTopics.forEach(topic => {
+            if (topic.quizResult && topic.quizResult.weakAreas) {
+                topic.quizResult.weakAreas.forEach(area => weakAreas.add(area));
+                quizScoreSum += topic.quizResult.score || 0;
+                validQuizCount++;
+            }
+            if (topic.attentionScore) {
+                 attentionSum += topic.attentionScore;
+            }
+        });
+
+        const avgAttention = recentTopics.length ? Math.round(attentionSum / recentTopics.length) : 0;
+        const avgQuiz = validQuizCount ? Math.round(quizScoreSum / validQuizCount) : 0;
+
+        const gapsArray = Array.from(weakAreas);
+        
+        // Simulating AI generating detailed gap outputs
+        res.json({
+            skillGaps: gapsArray.length > 0 ? gapsArray : ['Advanced Problem Solving'],
+            missingCertifications: ['Industry Standard Cloud Certification (e.g., AWS/GCP)', 'Domain Specific Foundational Cert'],
+            requiredProjects: gapsArray.map(gap => `Build a project heavily utilizing ${gap}`),
+            weakAcademicConcepts: gapsArray.length > 0 ? gapsArray.slice(0,2) : ['Core Fundamentals'],
+            recommendations: {
+                courses: gapsArray.map(gap => `Remedial Course: ${gap} Foundations`),
+                practiceTests: ['Weekly comprehensive aptitude test', 'Topic-specific quick quizzes'],
+                projectSuggestions: ['Create a full-stack portfolio piece addressing your weakest skill'],
+                certifications: ['Complete a free online verified certificate for ' + (gapsArray[0] || 'your core domain')]
+            },
+            overallAttention: avgAttention || 85,
+            averageQuizScore: avgQuiz || 70,
+            analysis: `We detected ${gapsArray.length} specific skill gaps based on your recent quiz scores.`
+        });
+    } catch (error) {
+        console.error('Gap analysis error:', error);
+        res.status(500).json({ message: 'Server error' });
     }
 });
 

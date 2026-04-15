@@ -27,6 +27,8 @@ const Header = () => {
     { path: "/", label: "Home" },
     { path: "/dashboard", label: "Dashboard" },
     { path: "/assessment", label: "Career Assessment" },
+    { path: "/interview", label: "Mock Interview" },
+    { path: "/gap-analysis", label: "Gap Analysis" },
   ];
 
   const navLinks = isAuthenticated ? authenticatedNavLinks : publicNavLinks;

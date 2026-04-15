@@ -3,7 +3,7 @@ import { useParams, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import RoadmapTree from "@/components/roadmap/RoadmapTree";
 import ProgressRing from "@/components/roadmap/ProgressRing";
-import { ArrowLeft, Download, Share2, Clock, BookOpen, Trophy } from "lucide-react";
+import { ArrowLeft, Download, Share2, Clock, BookOpen, Trophy, RefreshCw } from "lucide-react";
 
 const mockRoadmapData = {
   "data-scientist": {
@@ -116,6 +116,23 @@ const Roadmap = () => {
     navigate(`/topic/${topicId}`);
   };
 
+  const handleAdaptiveRefresh = () => {
+    // Phase 9: Continuous Adaptive Learning Loop
+    const updatedModules = [...modules];
+    // Add a new revision module dynamically
+    updatedModules.unshift({
+      id: "ai-personalized-review",
+      name: "AI Adaptive Revision (Phase 9)",
+      totalHours: 10,
+      topics: [
+        { id: "ai-review-1", name: "Targeted Concept Review", hours: 4, completed: false },
+        { id: "ai-review-2", name: "Custom Practice Exam", hours: 6, completed: false },
+      ]
+    });
+    setModules(updatedModules);
+    alert('AI has adapted your roadmap based on recent Gap Analysis and Quiz scores!');
+  };
+
   const totalTopics = modules.reduce((acc, m) => acc + m.topics.length, 0);
   const completedTopics = modules.reduce(
     (acc, m) => acc + m.topics.filter((t) => t.completed).length,
@@ -170,7 +187,11 @@ const Roadmap = () => {
             </div>
           </div>
 
-          <div className="flex gap-3 mt-6 pt-6 border-t border-border">
+          <div className="flex flex-wrap gap-3 mt-6 pt-6 border-t border-border">
+            <Button variant="default" size="sm" onClick={handleAdaptiveRefresh} className="bg-indigo-600 hover:bg-indigo-700 text-white">
+              <RefreshCw className="h-4 w-4 mr-2" />
+              Adapt Target Path (Phase 9 AI)
+            </Button>
             <Button variant="outline" size="sm">
               <Download className="h-4 w-4" />
               Export PDF

@@ -64,6 +64,20 @@ const UserSchema = new mongoose.Schema({
             timeSpent: Number, // minutes
             resourcesUsed: [String],
             notesCount: Number,
+            attentionScore: Number, // 0-100 indicating focus level
+            distractionCount: Number, // Number of times user was distracted
+            emotions: {
+                focused: Number, // percentage
+                bored: Number,
+                confused: Number
+            },
+            quizResult: {
+                score: Number,
+                totalQuestions: Number,
+                accuracy: Number,
+                weakAreas: [String],
+                strongAreas: [String]
+            }
         }],
         totalHours: {
             type: Number,
