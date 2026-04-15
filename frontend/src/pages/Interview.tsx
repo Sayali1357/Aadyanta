@@ -51,7 +51,7 @@ const Interview = () => {
   useEffect(() => {
     const fetchHistory = async () => {
       try {
-        const token = localStorage.getItem('token');
+        const token = localStorage.getItem('auth_token');
         if (!token) return;
         const res = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3001/api'}/interview/history`, {
           headers: { 'Authorization': `Bearer ${token}` }
@@ -136,7 +136,7 @@ const Interview = () => {
     const dialogueHistory = newMessages.map(m => `${m.role === 'model' ? 'Interviewer' : 'Candidate'}: ${m.text}`).join('\n');
     
     try {
-      const token = localStorage.getItem('token');
+      const token = localStorage.getItem('auth_token');
       const res = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3001/api'}/interview/chat`, {
         method: 'POST',
         headers: {
@@ -174,7 +174,7 @@ const Interview = () => {
     try {
       const dialogueHistory = chatMessages.map(m => `${m.role === 'model' ? 'Interviewer' : 'Candidate'}: ${m.text}`).join('\n');
       
-      const token = localStorage.getItem('token');
+      const token = localStorage.getItem('auth_token');
       const res = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3001/api'}/interview/generate-feedback`, {
         method: 'POST',
         headers: {

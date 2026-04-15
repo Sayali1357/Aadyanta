@@ -44,7 +44,7 @@ router.post('/chat', authMiddleware, async (req, res) => {
         const { message, dialogueHistory, role } = req.body;
         const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || process.env.GOOGLE_GENERATIVE_AI_API_KEY);
         // Using a standard flash model name for Gemini
-        const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+        const model = genAI.getGenerativeModel({ model: process.env.GEMINI_MODEL || "gemini-2.5-flash" });
         
         let prompt = `You are an expert technical interviewer for the role: ${role}. You are conducting a mock interview via text chat.\n`;
         prompt += `Here is the dialogue history:\n${dialogueHistory}\n\n`;
@@ -77,7 +77,7 @@ router.post('/generate-feedback', authMiddleware, async (req, res) => {
             };
         } else {
             const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || process.env.GOOGLE_GENERATIVE_AI_API_KEY);
-            const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+            const model = genAI.getGenerativeModel({ model: process.env.GEMINI_MODEL || "gemini-2.5-flash" });
             
             let prompt = `You are an expert technical interviewer evaluating a mock interview for the role: ${role}.\n`;
             prompt += `Analyze the following dialogue history and provide a detailed evaluation.\n`;

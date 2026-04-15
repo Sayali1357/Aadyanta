@@ -18,6 +18,8 @@ import GapAnalysis from "./pages/GapAnalysis";
 import NotFound from "./pages/NotFound";
 import LifeSimulation from "./pages/LifeSimulation";
 import EscapeRoom from "./pages/EscapeRoom";
+import Quiz from "./pages/Quiz";
+import QuizResult from "./pages/QuizResult";
 
 const queryClient = new QueryClient();
 
@@ -102,6 +104,22 @@ const App = () => (
                   element={
                     <ProtectedRoute>
                       <EscapeRoom />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/quiz/:roadmapId/:moduleId"
+                  element={
+                    <ProtectedRoute>
+                      <Quiz />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/quiz-result/:quizId"
+                  element={
+                    <ProtectedRoute>
+                      <QuizResult />
                     </ProtectedRoute>
                   }
                 />
