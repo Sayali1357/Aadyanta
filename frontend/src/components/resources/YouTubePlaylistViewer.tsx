@@ -10,6 +10,7 @@ interface YouTubePlaylistViewerProps {
     title: string;
     onMarkComplete?: (videoId: string) => void;
     completedVideos?: string[];
+    onVideoStateChange?: (isPlaying: boolean) => void;
 }
 
 interface PlaylistItem {
@@ -27,6 +28,7 @@ const YouTubePlaylistViewer = ({
     title,
     onMarkComplete,
     completedVideos = [],
+    onVideoStateChange,
 }: YouTubePlaylistViewerProps) => {
     const [videos, setVideos] = useState<PlaylistItem[]>([]);
     const [loading, setLoading] = useState(true);
@@ -84,11 +86,13 @@ const YouTubePlaylistViewer = ({
     const handleVideoSelect = (video: PlaylistItem) => {
         setCurrentVideo(video);
         setShowPlaylist(false);
+        onVideoStateChange?.(true); // Video is now playing
     };
 
     const handleMarkComplete = () => {
         if (currentVideo && onMarkComplete) {
             onMarkComplete(currentVideo.videoId);
+            onVideoStateChange?.(false); // Stop monitoring when marking complete
         }
     };
 

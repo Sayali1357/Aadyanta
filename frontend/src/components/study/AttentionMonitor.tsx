@@ -1,72 +1,191 @@
-import React, { useEffect, useRef, useState } from 'react';
-import { Camera, CameraOff, AlertCircle, Focus, Activity } from 'lucide-react';
+import React, { useEffect, useRef, useState, useCallback } from 'react';
+import { Camera, CameraOff, AlertCircle, Focus, Activity, Play, Square, TrendingUp, Zap } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
 
-interface AttentionData {
-  score: number;
-  distractions: number;
-  emotions: {
-    focused: number;
-    bored: number;
-    confused: number;
-  };
+interface AttentionSession {
+  sessionId: string;
+  currentScore: number;
+  framesProcessed: number;
+  elapsedTime: number;
+  status: 'ATTENTIVE' | 'DISTRACTED';
+  timeArray: number[];
+  attentionArray: number[];
+  statusArray: string[];
+  faceDetected: boolean;
 }
 
 interface AttentionMonitorProps {
-  onAttentionUpdate: (data: AttentionData) => void;
+  isVideoPlaying?: boolean;
+  onAttentionUpdate?: (data: any) => void;
   isActive?: boolean;
 }
 
-const AttentionMonitor: React.FC<AttentionMonitorProps> = ({ onAttentionUpdate, isActive = true }) => {
+const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:5000/api/v1';
+
+const AttentionMonitor: React.FC<AttentionMonitorProps> = ({ 
+  isVideoPlaying = false,
+  onAttentionUpdate,
+  isActive = true 
+}) => {
   const videoRef = useRef<HTMLVideoElement>(null);
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const chartRef = useRef<any>(null);
+  const snapshotIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  
   const [stream, setStream] = useState<MediaStream | null>(null);
   const [isCameraActive, setIsCameraActive] = useState(false);
+  const [isMonitoring, setIsMonitoring] = useState(false);
   const [permissionDenied, setPermissionDenied] = useState(false);
-  const [attentionData, setAttentionData] = useState<AttentionData>({
-    score: 85,
-    distractions: 0,
-    emotions: { focused: 80, bored: 10, confused: 10 }
-  });
+  const [modelError, setModelError] = useState<string | null>(null);
+  const [sessionData, setSessionData] = useState<AttentionSession | null>(null);
+  const [showResults, setShowResults] = useState(false);
+  const [sessionSummary, setSessionSummary] = useState<any>(null);
 
-  const generateSimulatedData = (prev: AttentionData): AttentionData => {
-    // Simulate AI model outputs (Focus, Distraction, Emotions)
-    const newScore = Math.min(100, Math.max(30, prev.score + (Math.random() * 10 - 5)));
-    const newDistraction = Math.random() > 0.95 ? prev.distractions + 1 : prev.distractions;
-    
-    return {
-      score: Math.round(newScore),
-      distractions: newDistraction,
-      emotions: {
-        focused: Math.min(100, Math.round(newScore * 0.9)),
-        bored: Math.max(0, Math.round(100 - newScore - (Math.random() * 10))),
-        confused: Math.max(0, Math.round((100 - newScore) * 0.3)),
+  // Start monitoring session
+  const startMonitoring = useCallback(async () => {
+    try {
+      setModelError(null);
+      const response = await fetch(`${API_BASE}/session/start`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ timeout: 300 })
+      });
+
+      if (!response.ok) {
+        if (response.status === 503) {
+          throw new Error('Attention model server is offline. Please ensure the backend is running.');
+        }
+        throw new Error('Failed to start attention monitoring session');
       }
-    };
-  };
 
-  useEffect(() => {
-    let interval: NodeJS.Timeout;
-
-    if (isCameraActive && isActive) {
-      interval = setInterval(() => {
-        setAttentionData((prev) => {
-          const newData = generateSimulatedData(prev);
-          onAttentionUpdate(newData); // send data to parent
-          return newData;
-        });
-      }, 3000); // 3 seconds for simulation update
+      const data = await response.json();
+      const newSessionData: AttentionSession = {
+        sessionId: data.session_id,
+        currentScore: 0,
+        framesProcessed: 0,
+        elapsedTime: 0,
+        status: 'ATTENTIVE',
+        timeArray: [],
+        attentionArray: [],
+        statusArray: [],
+        faceDetected: false
+      };
+      
+      setSessionData(newSessionData);
+      setIsMonitoring(true);
+      sendSnapshots(data.session_id);
+    } catch (error) {
+      setModelError(error instanceof Error ? error.message : 'Failed to start monitoring');
+      console.error('Error starting monitoring:', error);
     }
+  }, []);
 
-    return () => {
-      clearInterval(interval);
-    };
-  }, [isCameraActive, isActive, onAttentionUpdate]);
+  // Stop monitoring session
+  const stopMonitoring = useCallback(async () => {
+    try {
+      if (!sessionData?.sessionId) return;
 
+      setIsMonitoring(false);
+      if (snapshotIntervalRef.current) {
+        clearInterval(snapshotIntervalRef.current);
+      }
+
+      // Get final summary
+      const summaryResponse = await fetch(`${API_BASE}/session/${sessionData.sessionId}/summary`);
+      if (summaryResponse.ok) {
+        const summary = await summaryResponse.json();
+        setSessionSummary(summary);
+        setShowResults(true);
+      }
+
+      // End session
+      await fetch(`${API_BASE}/session/${sessionData.sessionId}/end`, {
+        method: 'POST'
+      });
+
+      setSessionData(null);
+    } catch (error) {
+      console.error('Error stopping monitoring:', error);
+      setModelError('Error ending session');
+    }
+  }, [sessionData?.sessionId]);
+
+  // Send snapshots to backend
+  const sendSnapshots = useCallback((sessionId: string) => {
+    snapshotIntervalRef.current = setInterval(async () => {
+      if (!isMonitoring || !videoRef.current || !canvasRef.current) {
+        return;
+      }
+
+      try {
+        const ctx = canvasRef.current.getContext('2d');
+        if (!ctx) return;
+
+        ctx.drawImage(videoRef.current, 0, 0);
+        canvasRef.current.toBlob(async (blob) => {
+          if (!blob) return;
+
+          const formData = new FormData();
+          formData.append('image', blob, 'snapshot.jpg');
+
+          const response = await fetch(`${API_BASE}/session/${sessionId}/snapshot`, {
+            method: 'POST',
+            body: formData
+          });
+
+          if (!response.ok) {
+            if (response.status === 503) {
+              setModelError('Model server is offline');
+              stopMonitoring();
+              return;
+            }
+            throw new Error('Failed to process snapshot');
+          }
+
+          const data = await response.json();
+          
+          setSessionData(prev => prev ? {
+            ...prev,
+            currentScore: data.attention_score,
+            framesProcessed: data.frames_processed,
+            elapsedTime: data.elapsed_time,
+            status: data.current_status,
+            faceDetected: data.face_detected
+          } : null);
+
+          if (onAttentionUpdate) {
+            onAttentionUpdate({
+              score: Math.round(data.attention_score),
+              attention_score: data.attention_score
+            });
+          }
+        }, 'image/jpeg', 0.8);
+      } catch (error) {
+        console.error('Error sending snapshot:', error);
+      }
+    }, 300); // Send every 300ms
+  }, [isMonitoring, onAttentionUpdate, stopMonitoring]);
+
+  // Auto-start monitoring when video plays
+  useEffect(() => {
+    if (isVideoPlaying && isActive && !isMonitoring && isCameraActive && !permissionDenied) {
+      startMonitoring();
+    } else if (!isVideoPlaying && isMonitoring) {
+      stopMonitoring();
+    }
+  }, [isVideoPlaying, isActive, isCameraActive, permissionDenied, startMonitoring, stopMonitoring, isMonitoring]);
+
+  // Initialize camera on mount
   useEffect(() => {
     const startCamera = async () => {
       try {
-        const mediaStream = await navigator.mediaDevices.getUserMedia({ video: true });
+        const mediaStream = await navigator.mediaDevices.getUserMedia({ 
+          video: { width: { ideal: 640 }, height: { ideal: 480 } } 
+        });
         setStream(mediaStream);
         setIsCameraActive(true);
         if (videoRef.current) {
@@ -74,6 +193,7 @@ const AttentionMonitor: React.FC<AttentionMonitorProps> = ({ onAttentionUpdate, 
         }
       } catch (err) {
         setPermissionDenied(true);
+        setModelError('Camera access denied. Please allow camera access in browser settings.');
         console.error('Error accessing webcam:', err);
       }
     };
@@ -92,115 +212,150 @@ const AttentionMonitor: React.FC<AttentionMonitorProps> = ({ onAttentionUpdate, 
   if (!isActive) return null;
 
   return (
-    <Card className="bg-slate-900 border-slate-700 text-slate-100 overflow-hidden shadow-xl animate-fade-in">
-      <div className="bg-slate-800 px-4 py-3 flex items-center justify-between border-b border-slate-700">
+    <Card className="overflow-hidden shadow-lg border border-slate-200">
+      {/* Error Alert */}
+      {modelError && (
+        <Alert className="rounded-none border-b border-red-200 bg-red-50 text-red-900">
+          <AlertCircle className="h-4 w-4" />
+          <AlertDescription>{modelError}</AlertDescription>
+        </Alert>
+      )}
+
+      {/* Header */}
+      <div className="bg-gradient-to-r from-blue-600 to-purple-600 text-white px-4 py-3 flex items-center justify-between">
         <div className="flex items-center gap-2">
-          <Activity className="h-4 w-4 text-primary" />
+          <Zap className="h-4 w-4" />
           <h3 className="font-semibold text-sm">AI Attention Monitor</h3>
         </div>
-        {isCameraActive ? (
-          <div className="flex items-center gap-2">
-            <span className="relative flex h-2.5 w-2.5">
-              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
-              <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-green-500"></span>
-            </span>
-            <span className="text-xs text-green-400 font-medium">Tracking Active</span>
-          </div>
-        ) : (
-          <div className="flex items-center gap-2">
-            <CameraOff className="h-4 w-4 text-red-400" />
-            <span className="text-xs text-red-400 font-medium">{permissionDenied ? 'Access Denied' : 'Inactive'}</span>
-          </div>
-        )}
+        <div className="flex items-center gap-2">
+          {isMonitoring && (
+            <>
+              <span className="relative flex h-2.5 w-2.5">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-white opacity-75"></span>
+                <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-white"></span>
+              </span>
+              <span className="text-xs font-medium">Monitoring</span>
+            </>
+          )}
+          {!isMonitoring && isCameraActive && (
+            <>
+              <Camera className="h-4 w-4" />
+              <span className="text-xs font-medium">Ready</span>
+            </>
+          )}
+          {permissionDenied && (
+            <>
+              <CameraOff className="h-4 w-4" />
+              <span className="text-xs font-medium">No Camera</span>
+            </>
+          )}
+        </div>
       </div>
 
       <CardContent className="p-4">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div className="relative bg-black rounded-lg overflow-hidden aspect-video border border-slate-700 flex items-center justify-center">
-            {isCameraActive ? (
-              <>
+        {/* Camera Feed & Stats */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+          {/* Camera */}
+          <div className="md:col-span-2">
+            <div className="relative bg-black rounded-lg overflow-hidden aspect-video border border-slate-300">
+              {isCameraActive && (
                 <video
                   ref={videoRef}
                   autoPlay
                   playsInline
                   muted
-                  className="w-full h-full object-cover opacity-80"
+                  className="w-full h-full object-cover"
                 />
-                {/* Simulated AI Overlays */}
-                <div className="absolute inset-0 pointer-events-none">
-                  <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-32 h-32 border-2 border-primary/50 border-dashed rounded-lg">
-                    <div className="absolute top-0 left-0 w-2 h-2 border-t-2 border-l-2 border-primary -mt-1 -ml-1"></div>
-                    <div className="absolute top-0 right-0 w-2 h-2 border-t-2 border-r-2 border-primary -mt-1 -mr-1"></div>
-                    <div className="absolute bottom-0 left-0 w-2 h-2 border-b-2 border-l-2 border-primary -mb-1 -ml-1"></div>
-                    <div className="absolute bottom-0 right-0 w-2 h-2 border-b-2 border-r-2 border-primary -mb-1 -mr-1"></div>
-                  </div>
-                  {/* Fake face landmarks */}
-                  <div className="absolute top-[40%] left-[45%] w-1 h-1 bg-green-400 rounded-full shadow-[0_0_5px_rgba(74,222,128,1)]"></div>
-                  <div className="absolute top-[40%] right-[45%] w-1 h-1 bg-green-400 rounded-full shadow-[0_0_5px_rgba(74,222,128,1)]"></div>
-                  <div className="absolute top-[60%] left-1/2 -translate-x-1/2 w-8 h-1 bg-green-400/50 rounded-full"></div>
+              )}
+              {!isCameraActive && (
+                <div className="flex flex-col items-center justify-center h-full">
+                  <Camera className="h-12 w-12 text-slate-600 mb-2" />
+                  <p className="text-sm text-slate-500">
+                    {permissionDenied ? 'Camera access denied' : 'Initializing camera...'}
+                  </p>
                 </div>
-              </>
-            ) : (
-              <div className="text-center p-4">
-                {permissionDenied ? (
-                  <>
-                    <AlertCircle className="h-8 w-8 text-red-500 mx-auto mb-2" />
-                    <p className="text-sm text-slate-400">Camera access is blocked.</p>
-                  </>
-                ) : (
-                  <>
-                    <Camera className="h-8 w-8 text-slate-500 mx-auto mb-2 animate-pulse" />
-                    <p className="text-sm text-slate-400">Initializing camera...</p>
-                  </>
-                )}
-              </div>
-            )}
-            <div className="absolute top-2 right-2 bg-black/60 px-2 py-1 rounded text-[10px] text-white">
-              Model: v2.4.1 (CV)
+              )}
+              <canvas ref={canvasRef} className="hidden" />
             </div>
           </div>
 
-          <div className="flex flex-col justify-center space-y-4">
-            <div>
-              <div className="flex justify-between text-xs mb-1">
-                <span className="text-slate-400 flex items-center gap-1"><Focus className="h-3 w-3"/> Attention Score</span>
-                <span className={attentionData.score > 70 ? 'text-green-400 font-bold' : attentionData.score > 40 ? 'text-yellow-400 font-bold' : 'text-red-400 font-bold'}>
-                  {attentionData.score}%
-                </span>
+          {/* Real-time Stats */}
+          <div className="space-y-3">
+            {/* Attention Score */}
+            <div className="bg-gradient-to-br from-blue-50 to-purple-50 border border-purple-200 rounded-lg p-3">
+              <div className="text-xs text-slate-600 mb-1 flex items-center gap-1">
+                <Focus className="h-3 w-3" />
+                Attention Score
               </div>
-              <Progress value={attentionData.score} className="h-2 bg-slate-800" indicatorclassName={attentionData.score > 70 ? 'bg-green-500' : attentionData.score > 40 ? 'bg-yellow-500' : 'bg-red-500'} />
-            </div>
-
-            <div className="grid grid-cols-2 gap-2 text-center text-xs">
-              <div className="bg-slate-800 rounded p-2 border border-slate-700">
-                <div className="text-slate-400 mb-1">Distractions</div>
-                <div className="text-lg font-bold text-white">{attentionData.distractions}</div>
+              <div className="text-2xl font-bold text-purple-600">
+                {sessionData ? Math.round(sessionData.currentScore) : '--'}%
               </div>
-              <div className="bg-slate-800 rounded p-2 border border-slate-700">
-                <div className="text-slate-400 mb-1">Primary Emotion</div>
-                <div className="text-lg font-bold text-primary">
-                  {attentionData.emotions.focused > Math.max(attentionData.emotions.bored, attentionData.emotions.confused) ? 'Focused' : 
-                   (attentionData.emotions.bored > attentionData.emotions.confused ? 'Bored' : 'Confused')}
-                </div>
+              <div className="mt-2">
+                <Progress 
+                  value={sessionData?.currentScore || 0} 
+                  className="h-1.5"
+                />
               </div>
             </div>
 
-            <div className="space-y-1">
-              <div className="text-[10px] text-slate-500 font-medium uppercase tracking-wider mb-2">Emotion Analysis</div>
-              <div className="flex justify-between items-center text-xs">
-                <span className="text-slate-400">Focused</span>
-                <span className="text-slate-300">{attentionData.emotions.focused}%</span>
+            {/* Status */}
+            <div className="bg-slate-50 border border-slate-200 rounded-lg p-3">
+              <div className="text-xs text-slate-600 mb-2">Status</div>
+              {sessionData && (
+                <Badge className={sessionData.status === 'ATTENTIVE' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}>
+                  {sessionData.status}
+                </Badge>
+              )}
+            </div>
+
+            {/* Stats */}
+            <div className="flex gap-2">
+              <div className="flex-1 bg-slate-50 border border-slate-200 rounded p-2 text-center">
+                <div className="text-xs text-slate-600">Frames</div>
+                <div className="font-bold text-slate-900">{sessionData?.framesProcessed || 0}</div>
               </div>
-              <Progress value={attentionData.emotions.focused} className="h-1 bg-slate-800" indicatorclassName="bg-blue-400" />
-              
-              <div className="flex justify-between items-center text-xs pt-1">
-                <span className="text-slate-400">Bored</span>
-                <span className="text-slate-300">{attentionData.emotions.bored}%</span>
+              <div className="flex-1 bg-slate-50 border border-slate-200 rounded p-2 text-center">
+                <div className="text-xs text-slate-600">Time</div>
+                <div className="font-bold text-slate-900">{sessionData?.elapsedTime.toFixed(1)}s</div>
               </div>
-              <Progress value={attentionData.emotions.bored} className="h-1 bg-slate-800" indicatorclassName="bg-slate-500" />
             </div>
           </div>
         </div>
+
+        {/* Show Results Summary */}
+        {showResults && sessionSummary && (
+          <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-4">
+            <h4 className="font-semibold text-slate-900 mb-3 flex items-center gap-2">
+              <TrendingUp className="h-4 w-4 text-blue-600" />
+              Session Summary
+            </h4>
+            <div className="grid grid-cols-2 gap-3 text-sm">
+              <div>
+                <span className="text-slate-600">Final Score</span>
+                <div className="font-bold text-lg text-purple-600">{Math.round(sessionSummary.attention_score)}%</div>
+              </div>
+              <div>
+                <span className="text-slate-600">Total Time</span>
+                <div className="font-bold text-lg text-slate-900">{sessionSummary.total_time.toFixed(1)}s</div>
+              </div>
+              <div>
+                <span className="text-slate-600">Total Frames</span>
+                <div className="font-bold text-slate-900">{sessionSummary.frames_processed}</div>
+              </div>
+              <div>
+                <span className="text-slate-600">Distracted Periods</span>
+                <div className="font-bold text-slate-900">{sessionSummary.distracted_periods?.length || 0}</div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Status Message */}
+        {!sessionData && !isMonitoring && isCameraActive && !modelError && (
+          <div className="text-center py-4 text-slate-600 text-sm">
+            <p>Play a YouTube video to automatically start attention monitoring</p>
+          </div>
+        )}
       </CardContent>
     </Card>
   );
