@@ -57,10 +57,9 @@ class MongoDBService {
 
 export const mongoService = new MongoDBService();
 
-// Collection names
+// Collection names — matches the new 3-collection schema
 export const COLLECTIONS = {
     USERS: 'users',
+    METADATA: 'metadatas', // Mongoose pluralizes to 'metadatas'
     ROADMAPS: 'roadmaps',
-    USER_PROGRESS: 'user_progress',
-    COMPLETED_TOPICS: 'completed_topics',
 } as const;

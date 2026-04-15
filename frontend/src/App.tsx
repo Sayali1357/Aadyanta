@@ -20,6 +20,7 @@ import LifeSimulation from "./pages/LifeSimulation";
 import EscapeRoom from "./pages/EscapeRoom";
 import Quiz from "./pages/Quiz";
 import QuizResult from "./pages/QuizResult";
+import MetadataDashboard from "./pages/MetadataDashboard";
 
 const queryClient = new QueryClient();
 
@@ -120,6 +121,14 @@ const App = () => (
                   element={
                     <ProtectedRoute>
                       <QuizResult />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/metadata-dashboard"
+                  element={
+                    <ProtectedRoute>
+                      <MetadataDashboard />
                     </ProtectedRoute>
                   }
                 />

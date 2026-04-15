@@ -92,17 +92,35 @@ app.get('/api/health', (req, res) => {
     });
 });
 
+// API Key Usage & Cache Stats (token optimization monitoring)
+app.get('/api/stats', async (req, res) => {
+    try {
+        const geminiCache = require('./services/geminiCache');
+        const stats = await geminiCache.getCacheStats();
+        res.json({
+            status: 'ok',
+            timestamp: new Date().toISOString(),
+            ...stats,
+        });
+    } catch (error) {
+        res.status(500).json({ message: 'Failed to get stats', error: error.message });
+    }
+});
+
 // Root
 app.get('/', (req, res) => {
     res.json({
         name: 'Career Launch AI API',
-        version: '1.0.0',
+        version: '2.0.0',
+        schema: '3-collection (users, metadata, roadmaps)',
         endpoints: {
             auth: '/api/auth',
             user: '/api/user',
             roadmap: '/api/roadmap',
             quiz: '/api/quiz',
+            interview: '/api/interview',
             health: '/api/health',
+            stats: '/api/stats',
         },
     });
 });

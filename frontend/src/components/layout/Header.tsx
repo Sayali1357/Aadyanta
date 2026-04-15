@@ -8,15 +8,20 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Menu, X, User, LogOut, LayoutDashboard } from "lucide-react";
+import { Menu, X, User, LogOut, LayoutDashboard, Map } from "lucide-react";
 import { useState } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 
 const Header = () => {
   const location = useLocation();
   const navigate = useNavigate();
-  const { user, isAuthenticated, logout } = useAuth();
+  const { user, userProfile, isAuthenticated, logout } = useAuth();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+
+  // Derive dynamic roadmap path from user's selected career
+  const roadmapPath = userProfile?.selectedCareer?.careerId
+    ? `/roadmap/${userProfile.selectedCareer.careerId}`
+    : '/assessment';
 
   // Different nav links for authenticated vs unauthenticated users
   const publicNavLinks = [
@@ -26,6 +31,7 @@ const Header = () => {
   const authenticatedNavLinks = [
     { path: "/", label: "Home" },
     { path: "/dashboard", label: "Dashboard" },
+    { path: roadmapPath, label: "Roadmap" },
     { path: "/assessment", label: "Career Assessment" },
     { path: "/interview", label: "Mock Interview" },
     { path: "/gap-analysis", label: "Gap Analysis" },
@@ -33,7 +39,10 @@ const Header = () => {
 
   const navLinks = isAuthenticated ? authenticatedNavLinks : publicNavLinks;
 
-  const isActive = (path: string) => location.pathname === path;
+  const isActive = (path: string) => {
+    if (path.startsWith('/roadmap/')) return location.pathname.startsWith('/roadmap/');
+    return location.pathname === path;
+  };
 
   const handleLogout = () => {
     logout();

@@ -2,7 +2,7 @@ const express = require('express');
 const router = express.Router();
 const Interview = require('../models/Interview');
 const authMiddleware = require('../middleware/auth'); // ensure user is logged in
-const { GoogleGenerativeAI } = require('@google/generative-ai');
+const keyManager = require('../services/geminiKeyManager');
 
 // POST /api/interview/feedback
 router.post('/feedback', authMiddleware, async (req, res) => {
@@ -38,30 +38,34 @@ router.get('/history', authMiddleware, async (req, res) => {
     }
 });
 
-// POST /api/interview/chat
+// POST /api/interview/chat — Uses KEY 3 (interview)
 router.post('/chat', authMiddleware, async (req, res) => {
     try {
         const { message, dialogueHistory, role } = req.body;
-        const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || process.env.GOOGLE_GENERATIVE_AI_API_KEY);
-        // Using a standard flash model name for Gemini
-        const model = genAI.getGenerativeModel({ model: process.env.GEMINI_MODEL || "gemini-2.5-flash" });
+
+        // TOKEN OPTIMIZATION: Use key manager with 'interview' feature key
+        const model = keyManager.getModel('interview');
         
-        let prompt = `You are an expert technical interviewer for the role: ${role}. You are conducting a mock interview via text chat.\n`;
-        prompt += `Here is the dialogue history:\n${dialogueHistory}\n\n`;
-        prompt += `Candidate says: ${message}\n`;
-        prompt += `Reply as the interviewer. Keep it realistic, professional, and succinct (max 2-3 sentences). Ask the next question or give brief feedback and move on.`;
+        // TOKEN OPTIMIZATION: Compact system instruction + terse history format
+        const prompt = `Role: ${role} interviewer. Context:\n${dialogueHistory}\n\nCandidate: ${message}\n\nRespond as interviewer (2-3 sentences max). Ask next question or give brief feedback.`;
         
+        const startTime = Date.now();
         const result = await model.generateContent(prompt);
         const text = result.response.text();
+        const responseTimeMs = Date.now() - startTime;
+
+        // Track tokens for dashboard analytics
+        keyManager.trackTokens('interview', prompt, text, responseTimeMs);
         
         res.status(200).json({ success: true, reply: text });
     } catch (error) {
+        keyManager.trackError('interview');
         console.error('Interview Chat Error:', error);
         res.status(500).json({ success: false, message: 'Server Error' });
     }
 });
 
-// POST /api/interview/generate-feedback
+// POST /api/interview/generate-feedback — Uses KEY 3 (interview)
 router.post('/generate-feedback', authMiddleware, async (req, res) => {
     try {
         const { role, mode, dialogueHistory } = req.body;
@@ -76,53 +80,48 @@ router.post('/generate-feedback', authMiddleware, async (req, res) => {
                 categoryScores: []
             };
         } else {
-            const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || process.env.GOOGLE_GENERATIVE_AI_API_KEY);
-            const model = genAI.getGenerativeModel({ model: process.env.GEMINI_MODEL || "gemini-2.5-flash" });
+            // TOKEN OPTIMIZATION: Compact evaluation prompt (~35% fewer tokens)
+            const model = keyManager.getModel('interview');
             
-            let prompt = `You are an expert technical interviewer evaluating a mock interview for the role: ${role}.\n`;
-            prompt += `Analyze the following dialogue history and provide a detailed evaluation.\n`;
-            prompt += `Dialogue History:\n${dialogueHistory}\n\n`;
-            prompt += `You must format your response strictly as a JSON block with the following keys:\n`;
-            prompt += `- "technicalScore": a number out of 100\n`;
-            prompt += `- "communicationScore": a number out of 100\n`;
-            prompt += `- "finalAssessment": a short summary paragraph of their overall performance\n`;
-            prompt += `- "categoryScores": an array of 2-4 objects, each with "name" (string, e.g., "Problem Solving"), "score" (number out of 100), and "comment" (string constraint to 1 sentence)\n`;
-            prompt += `Return NOTHING but the JSON object. Do not include markdown code blocks.`;
+            const prompt = `Evaluate this ${role} mock interview. Dialogue:\n${dialogueHistory}\n\nReturn ONLY JSON (no markdown): {"technicalScore":<0-100>,"communicationScore":<0-100>,"finalAssessment":"<1 paragraph>","categoryScores":[{"name":"<skill>","score":<0-100>,"comment":"<1 sentence>"}]}`;
             
             try {
+                const startTime = Date.now();
                 const result = await model.generateContent(prompt);
                 let text = result.response.text();
-                // Clean up markdown syntax if Gemini includes it
+                const responseTimeMs = Date.now() - startTime;
+
+                // Track tokens for dashboard analytics
+                keyManager.trackTokens('interview', prompt, text, responseTimeMs);
+
                 text = text.replace(/```json/i, '').replace(/```/g, '').trim();
-                
-                // Sometimes Gemini adds "json" prefix
                 if (text.startsWith('json')) text = text.substring(4).trim();
                 
                 evalData = JSON.parse(text);
             } catch (err) {
+                keyManager.trackError('interview');
                 console.error("Gemini Parsing Error:", err);
                 evalData = {
                     technicalScore: 30,
                     communicationScore: 30,
-                    finalAssessment: "AI generation failed due to an access exception. A default placeholder feedback mask of 30% was assigned to prevent system failure.",
+                    finalAssessment: "AI generation failed. A default placeholder feedback of 30% was assigned.",
                     categoryScores: [
-                        { name: "System Override", score: 30, comment: "Placeholder generated due to network block" }
+                        { name: "System Override", score: 30, comment: "Placeholder due to API error" }
                     ]
                 };
             }
         }
 
         if (!evalData || typeof evalData !== 'object' || Array.isArray(evalData)) {
-            // Fallback if AI returned something valid in JSON but not an object (like a string or array)
             evalData = {
                 technicalScore: 30,
                 communicationScore: 30,
-                finalAssessment: "AI evaluation malformed. Generated baseline 30% safe placeholder.",
+                finalAssessment: "AI evaluation malformed. Generated baseline 30% placeholder.",
                 categoryScores: []
             };
         }
 
-        // Validate structure to prevent Mongoose schema errors
+        // Validate structure
         const safeTechScore = parseInt(evalData?.technicalScore) || 30;
         const safeCommScore = parseInt(evalData?.communicationScore) || 30;
         let safeCategoryScores = Array.isArray(evalData?.categoryScores) ? evalData.categoryScores : [];

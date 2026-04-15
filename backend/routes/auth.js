@@ -4,36 +4,16 @@ const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const { body, validationResult } = require('express-validator');
 const User = require('../models/User');
+const Metadata = require('../models/Metadata');
 const mongoose = require('mongoose');
 
-// Enhanced Registration with College Info and ACID Transaction
+// Enhanced Registration — Creates User + Metadata in a Transaction
 router.post(
     '/register',
     [
         body('name').trim().notEmpty().withMessage('Name is required'),
         body('email').isEmail().normalizeEmail().withMessage('Valid email is required'),
         body('password').isLength({ min: 6 }).withMessage('Password must be at least 6 characters'),
-        body('collegeName').optional().trim(),
-        body('graduationYear')
-            .optional()
-            .isInt({ min: 2024, max: 2030 })
-            .withMessage('Graduation year must be between 2024 and 2030'),
-        body('currentSemester')
-            .optional()
-            .isInt({ min: 1, max: 8 })
-            .withMessage('Semester must be between 1 and 8'),
-        body('learningPace')
-            .optional()
-            .isIn(['slow', 'moderate', 'fast'])
-            .withMessage('Invalid learning pace'),
-        body('dailyTimeCommitment')
-            .optional()
-            .isInt({ min: 1, max: 12 })
-            .withMessage('Daily time must be between 1 and 12 hours'),
-        body('preferredLanguage')
-            .optional()
-            .isIn(['english', 'hindi', 'hinglish'])
-            .withMessage('Invalid language preference'),
     ],
     async (req, res) => {
         // Validate input
@@ -49,17 +29,7 @@ router.post(
         session.startTransaction();
 
         try {
-            const {
-                name,
-                email,
-                password,
-                collegeName,
-                graduationYear,
-                currentSemester,
-                learningPace,
-                dailyTimeCommitment,
-                preferredLanguage,
-            } = req.body;
+            const { name, email, password } = req.body;
 
             // Check if user exists (within transaction)
             const existingUser = await User.findOne({ email }).session(session);
@@ -72,25 +42,37 @@ router.post(
             const salt = await bcrypt.genSalt(10);
             const hashedPassword = await bcrypt.hash(password, salt);
 
-            // Create user with all info
+            // 1. Create the User document
             const user = new User({
-                name,
+                username: name,
                 email,
                 password: hashedPassword,
-                collegeName,
-                graduationYear,
-                currentSemester: currentSemester || 1,
-                learningProfile: {
-                    learningPace: learningPace || 'moderate',
-                    dailyTimeCommitment: dailyTimeCommitment || 2,
-                    preferredLanguage: preferredLanguage || 'hinglish',
-                    preferredContentTypes: ['video', 'article', 'practice'],
-                },
-                emailVerified: false,
                 isActive: true,
                 createdAt: new Date(),
             });
 
+            await user.save({ session });
+
+            // 2. Create the Metadata document (linked to user)
+            const metadata = new Metadata({
+                user_id: user._id,
+                current_streak: 0,
+                longest_streak: 0,
+                total_learning_points: 0,
+                progress: 0,
+                hours_invested: 0,
+                topics_completed: 0,
+                completed_topics: [],
+                recent_activity: [],
+                coming_next: [],
+                gap_topics: [],
+                milestones: [],
+            });
+
+            await metadata.save({ session });
+
+            // 3. Link metadata back to user
+            user.metadata_id = metadata._id;
             await user.save({ session });
 
             // Commit transaction
@@ -101,7 +83,6 @@ router.post(
                 {
                     userId: user._id,
                     email: user.email,
-                    collegeName: user.collegeName,
                 },
                 process.env.JWT_SECRET,
                 { expiresIn: process.env.JWT_EXPIRES_IN || '7d' }
@@ -111,10 +92,8 @@ router.post(
                 token,
                 user: {
                     id: user._id,
-                    name: user.name,
+                    name: user.username,
                     email: user.email,
-                    collegeName: user.collegeName,
-                    graduationYear: user.graduationYear,
                 },
             });
         } catch (error) {
@@ -127,7 +106,7 @@ router.post(
     }
 );
 
-// Login (unchanged but with better error messages)
+// Login
 router.post(
     '/login',
     [
@@ -165,7 +144,6 @@ router.post(
                 {
                     userId: user._id,
                     email: user.email,
-                    collegeName: user.collegeName,
                 },
                 process.env.JWT_SECRET,
                 { expiresIn: process.env.JWT_EXPIRES_IN || '7d' }
@@ -175,9 +153,8 @@ router.post(
                 token,
                 user: {
                     id: user._id,
-                    name: user.name,
+                    name: user.username,
                     email: user.email,
-                    collegeName: user.collegeName,
                     hasSelectedCareer: !!user.selectedCareer?.careerId,
                 },
             });
