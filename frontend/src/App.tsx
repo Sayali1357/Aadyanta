@@ -16,6 +16,8 @@ import Login from "./pages/Login";
 import Interview from "./pages/Interview";
 import GapAnalysis from "./pages/GapAnalysis";
 import NotFound from "./pages/NotFound";
+import LifeSimulation from "./pages/LifeSimulation";
+import EscapeRoom from "./pages/EscapeRoom";
 
 const queryClient = new QueryClient();
 
@@ -84,6 +86,22 @@ const App = () => (
                   element={
                     <ProtectedRoute>
                       <GapAnalysis />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/life-simulation"
+                  element={
+                    <ProtectedRoute>
+                      <LifeSimulation />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/escape-room"
+                  element={
+                    <ProtectedRoute>
+                      <EscapeRoom />
                     </ProtectedRoute>
                   }
                 />

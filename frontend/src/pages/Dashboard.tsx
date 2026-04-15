@@ -4,7 +4,7 @@ import StatsCard from "@/components/dashboard/StatsCard";
 import GapAnalysisCard from "@/components/dashboard/GapAnalysisCard";
 import ProgressRing from "@/components/roadmap/ProgressRing";
 import { GlassCard } from "@/components/ui/glass-card";
-import { motion } from "framer-motion";
+import { motion, type Variants } from "framer-motion";
 import {
   Flame,
   Trophy,
@@ -52,7 +52,7 @@ const Dashboard = () => {
   ];
 
   // Animation Variants for Container
-  const containerVariants = {
+  const containerVariants: Variants = {
     hidden: { opacity: 0 },
     visible: {
       opacity: 1,
@@ -63,12 +63,12 @@ const Dashboard = () => {
     }
   };
 
-  const itemVariants = {
+  const itemVariants: Variants = {
     hidden: { y: 20, opacity: 0 },
     visible: {
       y: 0,
       opacity: 1,
-      transition: { duration: 0.5, ease: [0.23, 1, 0.32, 1] }
+      transition: { duration: 0.5, ease: "easeOut" }
     }
   };
 
@@ -110,6 +110,32 @@ const Dashboard = () => {
           animate="visible"
           className="flex flex-col gap-6"
         >
+          {/* Gamified Modes */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-2">
+            <Link to="/life-simulation">
+              <motion.div variants={itemVariants} className="bg-gradient-to-r from-blue-900/40 to-indigo-900/40 border border-blue-500/30 p-6 rounded-2xl flex items-center justify-between hover:from-blue-800/50 hover:to-indigo-800/50 transition-all shadow-glow-cyan group rounded-2xl cursor-pointer">
+                 <div>
+                   <h3 className="text-xl font-bold text-white mb-1">Life Simulation Dashboard</h3>
+                   <p className="text-sm text-blue-200/70">Manage stats, energy, and career progression</p>
+                 </div>
+                 <div className="bg-blue-500/20 p-3 rounded-full border border-blue-500/50 group-hover:scale-110 transition-transform">
+                   <Flame className="text-blue-400 w-6 h-6" />
+                 </div>
+              </motion.div>
+            </Link>
+            <Link to="/escape-room">
+              <motion.div variants={itemVariants} className="bg-gradient-to-r from-red-900/40 to-orange-900/40 border border-red-500/30 p-6 rounded-2xl flex items-center justify-between hover:from-red-800/50 hover:to-orange-800/50 transition-all shadow-[0_0_15px_rgba(255,0,0,0.3)] group cursor-pointer">
+                 <div>
+                   <h3 className="text-xl font-bold text-white mb-1">Escape Room Mode</h3>
+                   <p className="text-sm text-red-200/70 text-left">Solve coding puzzles to survive & escape</p>
+                 </div>
+                 <div className="bg-red-500/20 p-3 rounded-full border border-red-500/50 group-hover:scale-110 transition-transform">
+                   <Target className="text-red-400 w-6 h-6" />
+                 </div>
+              </motion.div>
+            </Link>
+          </div>
+
           {/* Stats Row */}
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
             <StatsCard
