@@ -188,9 +188,6 @@ const AttentionMonitor: React.FC<AttentionMonitorProps> = ({
         });
         setStream(mediaStream);
         setIsCameraActive(true);
-        if (videoRef.current) {
-          videoRef.current.srcObject = mediaStream;
-        }
       } catch (err) {
         setPermissionDenied(true);
         setModelError('Camera access denied. Please allow camera access in browser settings.');
@@ -208,6 +205,13 @@ const AttentionMonitor: React.FC<AttentionMonitorProps> = ({
       }
     };
   }, [isActive, permissionDenied]);
+
+  // Reactively bind the media stream to the video element
+  useEffect(() => {
+    if (videoRef.current && stream) {
+      videoRef.current.srcObject = stream;
+    }
+  }, [stream, isCameraActive]);
 
   if (!isActive) return null;
 
