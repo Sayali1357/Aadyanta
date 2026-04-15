@@ -249,8 +249,3 @@
 ::-webkit-scrollbar-thumb:hover {
   background: hsl(217 97% 58% / 0.85);
 }
-
-
-::-webkit-scrollbar-thumb:hover {
-  @apply bg-muted-foreground/50;
-}

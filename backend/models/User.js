@@ -153,7 +153,6 @@ const UserSchema = new mongoose.Schema({
 });
 
 // Indexes for performance
-UserSchema.index({ email: 1 }, { unique: true });
 UserSchema.index({ 'selectedCareer.careerId': 1 });
 UserSchema.index({ 'selectedCareer.domain': 1 });
 UserSchema.index({ 'progress.lastActive': -1 });
