@@ -2,7 +2,8 @@ import { motion, HTMLMotionProps } from 'framer-motion';
 import { ReactNode } from 'react';
 import { cn } from '@/lib/utils';
 
-// Premium Animated Glass Card for SaaS $50k+ UI Feel
+// Neural Interface Glass Card
+// bg: #12141C | border: rgba(255,255,255,0.05) | radius: 14px
 interface GlassCardProps extends HTMLMotionProps<"div"> {
   children: ReactNode;
   delay?: number;
@@ -16,20 +17,34 @@ export const GlassCard = ({ children, delay = 0, className, disableHover = false
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.5, delay, ease: [0.23, 1, 0.32, 1] }}
-      whileHover={disableHover ? {} : { y: -4, scale: 1.01, transition: { duration: 0.2 } }}
+      whileHover={disableHover ? {} : { y: -4, scale: 1.008, transition: { duration: 0.2 } }}
       className={cn(
-        "relative overflow-hidden rounded-2xl bg-white/[0.03] border border-white/[0.08] p-6 backdrop-blur-xl shadow-2xl group",
+        "relative overflow-hidden rounded-[14px] p-6 backdrop-blur-xl shadow-2xl group",
         className
       )}
+      style={{
+        background: '#12141C',
+        border: '1px solid rgba(255,255,255,0.05)',
+      }}
       {...props}
     >
-      {/* Dynamic Hover Glow Effect */}
+      {/* Hover Glow Effect — purple gradient */}
       {!disableHover && (
-        <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-transparent to-accent/10 opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none" />
+        <div
+          className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none"
+          style={{
+            background: 'linear-gradient(135deg, rgba(139,124,255,0.04), transparent, rgba(0,229,255,0.03))',
+          }}
+        />
       )}
       
-      {/* Subtle top inner highlight to give 3D edge */}
-      <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-white/20 to-transparent pointer-events-none" />
+      {/* Top edge highlight */}
+      <div
+        className="absolute inset-x-0 top-0 h-px pointer-events-none"
+        style={{
+          background: 'linear-gradient(to right, transparent, rgba(255,255,255,0.06), transparent)',
+        }}
+      />
       
       {/* Content */}
       <div className="relative z-10 h-full">

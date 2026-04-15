@@ -230,13 +230,13 @@ const Dashboard = () => {
           {/* Gamified Modes */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-2">
             <Link to="/life-simulation">
-              <motion.div variants={itemVariants} className="bg-gradient-to-r from-blue-900/40 to-indigo-900/40 border border-blue-500/30 p-6 rounded-2xl flex items-center justify-between hover:from-blue-800/50 hover:to-indigo-800/50 transition-all shadow-glow-cyan group cursor-pointer h-full">
+              <motion.div variants={itemVariants} className="bg-gradient-to-r from-[#1a1040]/40 to-[#12141C]/40 border border-[rgba(139,124,255,0.3)] p-6 rounded-2xl flex items-center justify-between hover:from-[#1a1040]/50 hover:to-[#201040]/50 transition-all shadow-glow-cyan group cursor-pointer h-full">
                  <div>
                    <h3 className="text-xl font-bold text-white mb-1">Life Simulation</h3>
-                   <p className="text-sm text-blue-200/70">Manage stats &amp; career progression</p>
+                   <p className="text-sm text-[#B69CFF]/70">Manage stats &amp; career progression</p>
                  </div>
-                 <div className="bg-blue-500/20 p-3 rounded-full border border-blue-500/50 group-hover:scale-110 transition-transform">
-                   <Flame className="text-blue-400 w-6 h-6" />
+                 <div className="bg-[rgba(139,124,255,0.2)] p-3 rounded-full border border-[rgba(139,124,255,0.5)] group-hover:scale-110 transition-transform">
+                   <Flame className="text-[#8B7CFF] w-6 h-6" />
                  </div>
               </motion.div>
             </Link>
@@ -397,7 +397,7 @@ const Dashboard = () => {
                           ? 'bg-red-500/10 text-red-400 border-red-500/30'
                           : gap.severity === 'medium'
                           ? 'bg-warning/10 text-warning border-warning/30'
-                          : 'bg-blue-500/10 text-blue-400 border-blue-500/30'
+                          : 'bg-[rgba(139,124,255,0.1)] text-[#8B7CFF] border-[rgba(139,124,255,0.3)]'
                       }`}
                     >
                       {gap.title}
