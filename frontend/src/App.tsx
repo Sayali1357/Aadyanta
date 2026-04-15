@@ -16,6 +16,8 @@ import Login from "./pages/Login";
 import Interview from "./pages/Interview";
 import GapAnalysis from "./pages/GapAnalysis";
 import NotFound from "./pages/NotFound";
+import Quiz from "./pages/Quiz";
+import QuizResult from "./pages/QuizResult";
 
 const queryClient = new QueryClient();
 
@@ -84,6 +86,22 @@ const App = () => (
                   element={
                     <ProtectedRoute>
                       <GapAnalysis />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/quiz/:roadmapId/:moduleId"
+                  element={
+                    <ProtectedRoute>
+                      <Quiz />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/quiz-result/:quizId"
+                  element={
+                    <ProtectedRoute>
+                      <QuizResult />
                     </ProtectedRoute>
                   }
                 />
