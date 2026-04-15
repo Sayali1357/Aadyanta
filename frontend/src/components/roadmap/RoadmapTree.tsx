@@ -1,6 +1,7 @@
 import { useState } from "react";
-import { ChevronDown, ChevronRight, CheckCircle2, Circle, Clock, BookOpen } from "lucide-react";
+import { ChevronDown, ChevronRight, CheckCircle2, Circle, Clock, BookOpen, BrainCircuit } from "lucide-react";
 import ProgressRing from "./ProgressRing";
+import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
 interface Topic {
@@ -22,9 +23,10 @@ interface RoadmapTreeProps {
   modules: Module[];
   onTopicComplete: (moduleId: string, topicId: string) => void;
   onTopicClick: (moduleId: string, topicId: string) => void;
+  onQuizClick?: (moduleId: string, moduleName: string) => void;
 }
 
-const RoadmapTree = ({ modules, onTopicComplete, onTopicClick }: RoadmapTreeProps) => {
+const RoadmapTree = ({ modules, onTopicComplete, onTopicClick, onQuizClick }: RoadmapTreeProps) => {
   const [expandedModules, setExpandedModules] = useState<string[]>(
     modules.length > 0 ? [modules[0].id] : []
   );
@@ -145,6 +147,23 @@ const RoadmapTree = ({ modules, onTopicComplete, onTopicClick }: RoadmapTreeProp
                     <ChevronRight className="h-4 w-4 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity" />
                   </div>
                 ))}
+              </div>
+            )}
+
+            {/* Take Module Quiz Button — always visible, outside expand/collapse */}
+            {onQuizClick && (
+              <div className="px-4 py-3 border-t border-border/50 bg-primary/5 flex items-center justify-between">
+                <span className="text-xs text-muted-foreground">
+                  Test your knowledge for this module
+                </span>
+                <Button
+                  size="sm"
+                  className="gap-2 bg-primary text-primary-foreground hover:bg-primary/90 shadow-sm"
+                  onClick={() => onQuizClick(module.id, module.name)}
+                >
+                  <BrainCircuit className="h-4 w-4" />
+                  Take Module Quiz
+                </Button>
               </div>
             )}
           </div>

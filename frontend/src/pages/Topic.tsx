@@ -44,6 +44,7 @@ const Topic = () => {
   const [error, setError] = useState<string | null>(null);
   const [attentionData, setAttentionData] = useState<any>(null);
   const [showQuiz, setShowQuiz] = useState(false);
+  const [isVideoPlaying, setIsVideoPlaying] = useState(false);
 
   // Extract topic details from location state or URL
   const topicName = (location.state as any)?.topicName || id?.replace(/-/g, ' ') || 'Learning Topic';
@@ -281,7 +282,11 @@ const Topic = () => {
           {/* Main Content */}
           <div className="lg:col-span-2 space-y-6">
             {/* Attention Monitor Phase 5 */}
-            <AttentionMonitor onAttentionUpdate={setAttentionData} isActive={!completed} />
+            <AttentionMonitor 
+              onAttentionUpdate={setAttentionData} 
+              isActive={!completed}
+              isVideoPlaying={isVideoPlaying}
+            />
 
             {/* Learning Resources Tabs */}
             <Tabs defaultValue="video" className="glass-card rounded-2xl shadow-lg border-border/50 overflow-hidden">
@@ -307,6 +312,7 @@ const Topic = () => {
                       title={topic.youtubePlaylist.title}
                       onMarkComplete={handleVideoComplete}
                       completedVideos={completedVideos}
+                      onVideoStateChange={setIsVideoPlaying}
                     />
                   </>
                 ) : (

@@ -116,6 +116,21 @@ const Roadmap = () => {
     navigate(`/topic/${topicId}`);
   };
 
+  const handleQuizClick = (moduleId: string, moduleName: string) => {
+    // Find the module to extract topics
+    const module = modules.find(m => m.id === moduleId);
+    if (module) {
+      navigate(`/quiz/${id}/${moduleId}`, { 
+        state: { 
+          moduleName: module.name,
+          topics: module.topics 
+        } 
+      });
+    } else {
+      navigate(`/quiz/${id}/${moduleId}`);
+    }
+  };
+
   const handleAdaptiveRefresh = () => {
     // Phase 9: Continuous Adaptive Learning Loop
     const updatedModules = [...modules];
@@ -208,6 +223,7 @@ const Roadmap = () => {
           modules={modules}
           onTopicComplete={handleTopicComplete}
           onTopicClick={handleTopicClick}
+          onQuizClick={handleQuizClick}
         />
       </div>
     </div>

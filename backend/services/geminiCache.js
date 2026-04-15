@@ -3,13 +3,21 @@ const Cache = require('../models/Cache');
 
 class GeminiCacheService {
     constructor() {
+        this.genAI = null; // initialized lazily on first use
+    }
+
+    /**
+     * Get or initialize the Gemini client.
+     * Called lazily so dotenv has already loaded by the time this runs.
+     */
+    _getClient() {
+        if (this.genAI) return this.genAI;
         const apiKey = process.env.GEMINI_API_KEY;
         if (!apiKey) {
-            console.warn('⚠️ Gemini API key not found. AI features will be limited.');
-            this.genAI = null;
-        } else {
-            this.genAI = new GoogleGenerativeAI(apiKey);
+            throw new Error('Gemini API key not configured. Set GEMINI_API_KEY in backend/.env');
         }
+        this.genAI = new GoogleGenerativeAI(apiKey);
+        return this.genAI;
     }
 
     /**
@@ -32,11 +40,7 @@ class GeminiCacheService {
             console.log(`⚠️ Cache MISS for roadmap: ${careerId}. Calling Gemini...`);
 
             // 2. Generate using Gemini (costs tokens)
-            if (!this.genAI) {
-                throw new Error('Gemini API not configured');
-            }
-
-            const model = this.genAI.getGenerativeModel({
+            const model = this._getClient().getGenerativeModel({
                 model: process.env.GEMINI_MODEL || 'gemini-2.5-flash'
             });
 
@@ -118,11 +122,7 @@ Return ONLY valid JSON in this format:
      * Generate career recommendations (NOT cached - user-specific)
      */
     async recommendCareers(assessmentData) {
-        if (!this.genAI) {
-            throw new Error('Gemini API not configured');
-        }
-
-        const model = this.genAI.getGenerativeModel({
+        const model = this._getClient().getGenerativeModel({
             model: process.env.GEMINI_MODEL || 'gemini-2.5-flash'
         });
 
@@ -165,11 +165,7 @@ Return ONLY valid JSON with career recommendations including fit scores.`;
             console.log(`⚠️ Cache MISS for resources: ${topicName}`);
 
             // 2. Generate using Gemini
-            if (!this.genAI) {
-                throw new Error('Gemini API not configured');
-            }
-
-            const model = this.genAI.getGenerativeModel({
+            const model = this._getClient().getGenerativeModel({
                 model: process.env.GEMINI_MODEL || 'gemini-2.5-flash'
             });
 
@@ -214,13 +210,17 @@ Return JSON format with resource list.`;
      * Extract JSON from Gemini response
      */
     extractJSON(text) {
+        // Strip markdown code blocks
         const jsonMatch = text.match(/```(?:json)?\s*\n?([\s\S]*?)\n?```/);
-        if (jsonMatch) {
-            return jsonMatch[1].trim();
-        }
+        if (jsonMatch) return jsonMatch[1].trim();
 
+        // Match JSON object
         const objectMatch = text.match(/\{[\s\S]*\}/);
         if (objectMatch) return objectMatch[0];
+
+        // Match JSON array
+        const arrayMatch = text.match(/\[[\s\S]*\]/);
+        if (arrayMatch) return arrayMatch[0];
 
         return text.trim();
     }
@@ -241,6 +241,75 @@ Return JSON format with resource list.`;
 
         return stats;
     }
-}
+
+    async generateQuiz(moduleName, topics) {
+        const primaryModel = process.env.GEMINI_MODEL || 'gemini-2.5-flash';
+        const fallbackModels = ['gemini-2.0-flash', 'gemini-2.0-flash-lite'];
+        const modelsToTry = [primaryModel, ...fallbackModels];
+
+        const topicsList = topics.map(t => t.name).join(', ');
+        const prompt = `You are a quiz generator. Generate exactly 5 multiple choice questions for the learning module: "${moduleName}".
+Topics covered: ${topicsList}
+
+You MUST respond with ONLY a valid JSON object. No explanation, no markdown, no code blocks. Just raw JSON.
+The JSON must follow this exact structure:
+{"questions":[{"question":"What is X?","options":["Option A","Option B","Option C","Option D"],"correctAnswer":"Option A","topicName":"${topics[0]?.name || moduleName}"}]}
+
+Generate 5 questions now:`;
+
+        let lastError;
+        for (const modelName of modelsToTry) {
+            try {
+                console.log(`🤖 Trying model: ${modelName}`);
+                const model = this._getClient().getGenerativeModel({ model: modelName });
+                const result = await model.generateContent(prompt);
+                const response = result.response.text().trim();
+
+                // Try direct parse first
+                try {
+                    const direct = JSON.parse(response);
+                    if (direct && direct.questions && Array.isArray(direct.questions)) {
+                        console.log(`✅ Quiz generated with ${modelName}`);
+                        return direct.questions;
+                    }
+                    if (Array.isArray(direct)) return direct;
+                } catch (_) { /* not clean JSON, try extraction */ }
+
+                const jsonData = this.extractJSON(response);
+                const parsed = JSON.parse(jsonData);
+                if (Array.isArray(parsed)) return parsed;
+                if (parsed && parsed.questions && Array.isArray(parsed.questions)) {
+                    console.log(`✅ Quiz generated with ${modelName}`);
+                    return parsed.questions;
+                }
+            } catch (error) {
+                lastError = error;
+                const status = error.status || error.statusCode;
+                if (status === 429) {
+                    // Extract retryDelay from error if available, default 20s
+                    const retryMatch = error.message?.match(/"retryDelay":"(\d+)s"/);
+                    const waitSec = retryMatch ? parseInt(retryMatch[1]) + 2 : 22;
+                    console.warn(`⏳ Rate limit on ${modelName} (429). Waiting ${waitSec}s before next model...`);
+                    await new Promise(r => setTimeout(r, waitSec * 1000));
+                    continue;
+                }
+                if (status === 503) {
+                    console.warn(`⚠️ Model ${modelName} overloaded (503), trying next...`);
+                    continue;
+                }
+                console.error(`Quiz generation error with ${modelName}:`, error.message);
+                break;
+            }
+        }
+
+        console.error('All models failed. Last error:', lastError?.message);
+        // Give a clear message based on error type
+        const lastStatus = lastError?.status || lastError?.statusCode;
+        if (lastStatus === 429) {
+            throw new Error('Rate limit reached. Please wait 30 seconds and try again.');
+        }
+        throw new Error('Quiz generation failed. Please try again in a moment.');
+    }
+} 
 
 module.exports = new GeminiCacheService();
