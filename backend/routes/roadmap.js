@@ -31,22 +31,27 @@ router.get('/:careerId', authMiddleware, async (req, res) => {
             });
         }
 
-        // 3. Try to find existing roadmap in database (using new field name)
-        let roadmap = await Roadmap.findOne({ career_id: careerId }).session(session);
+        // 3. Try to find existing roadmap in database (.lean() → plain JSON, reliable nested arrays)
+        let roadmap = await Roadmap.findOne({ career_id: careerId }).session(session).lean();
 
         if (roadmap) {
             console.log(`✅ Roadmap found in DB for: ${careerId}`);
 
-            // Update user's active_roadmap_id if not set
+            // Update user's active_roadmap_id if not set (field-only update avoids full User doc validation)
             if (!user.active_roadmap_id) {
-                user.active_roadmap_id = roadmap._id;
-                await user.save({ session });
+                await User.findByIdAndUpdate(
+                    req.userId,
+                    { $set: { active_roadmap_id: roadmap._id } },
+                    { session }
+                );
             }
 
             // Update metadata coming_next if empty
             let metadata = await Metadata.findOne({ user_id: req.userId }).session(session);
-            if (metadata && metadata.coming_next.length === 0) {
-                const completedIds = metadata.completed_topics.map(t => t.topic_id);
+            const comingNext = metadata?.coming_next;
+            const hasComingNext = Array.isArray(comingNext) && comingNext.length > 0;
+            if (metadata && !hasComingNext) {
+                const completedIds = (metadata.completed_topics || []).map(t => t.topic_id);
                 const nextTopics = [];
 
                 for (const mod of (roadmap.modules || [])) {
@@ -85,6 +90,7 @@ router.get('/:careerId', authMiddleware, async (req, res) => {
         roadmap = new Roadmap({
             ...roadmapData,
             // Map old field names to new ones if Gemini returns old format
+            roadmapId: roadmapData.roadmapId || careerId,
             roadmap_id: roadmapData.roadmap_id || roadmapData.roadmapId || `${careerId}_roadmap`,
             career_id: roadmapData.career_id || roadmapData.careerId || careerId,
             career_name: roadmapData.career_name || roadmapData.careerName || user.selectedCareer.careerName,
@@ -97,8 +103,11 @@ router.get('/:careerId', authMiddleware, async (req, res) => {
         await roadmap.save({ session });
 
         // 6. Update user's active_roadmap_id
-        user.active_roadmap_id = roadmap._id;
-        await user.save({ session });
+        await User.findByIdAndUpdate(
+            req.userId,
+            { $set: { active_roadmap_id: roadmap._id } },
+            { session }
+        );
 
         // 7. Update metadata coming_next with first 3 topics
         let metadata = await Metadata.findOne({ user_id: req.userId }).session(session);
@@ -122,7 +131,7 @@ router.get('/:careerId', authMiddleware, async (req, res) => {
 
         await session.commitTransaction();
 
-        res.json(roadmap);
+        res.json(roadmap.toObject ? roadmap.toObject({ flattenMaps: true }) : roadmap);
     } catch (error) {
         await session.abortTransaction();
         console.error('Get roadmap error:', error);

@@ -167,6 +167,12 @@ const ModuleSchema = new mongoose.Schema({
 
 // ── Roadmap Schema (Top Level) ───────────────────────────────────────
 const RoadmapSchema = new mongoose.Schema({
+    /** Canonical slug for URLs / quiz (matches career_id), enforced unique in DB */
+    roadmapId: {
+        type: String,
+        required: true,
+        unique: true,
+    },
     roadmap_id: {
         type: String,
         required: true,

@@ -20,10 +20,11 @@ import {
   BriefcaseBusiness,
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
-import { CareerRecommendation, AssessmentData } from '@/types/career';
+import { CareerRecommendation } from '@/types/career';
 import { useAuth } from '@/contexts/AuthContext';
 import { authService } from '@/services/authService';
 import { motion, AnimatePresence, type Variants } from 'framer-motion';
+import { FALLBACK_SEED_CAREERS } from '@/config/seedCareers';
 
 // ── Skill Categories ─────────────────────────────────────────
 const skillCategories: Record<string, string[]> = {
@@ -123,20 +124,8 @@ const Assessment = () => {
       });
 
       if (!res.ok) {
-        // Fallback: use frontend gemini service
-        const { geminiService } = await import('@/services/gemini');
-        const assessmentData: AssessmentData = {
-          interests: formData.skills.slice(0, 5),
-          skills: formData.skills,
-          education: 'undergraduate',
-          goals: formData.goals,
-          learningStyle: 'moderate',
-          dailyHours: 2,
-          aptitudeScores: { logical: 70, creative: 70, analytical: 70, communication: 70 },
-        };
-
-        const recommendations = await geminiService.recommendCareers(assessmentData);
-        setCareers(recommendations.slice(0, 4));
+        // Only seeded roles (same IDs as DB roadmaps from npm run seed)
+        setCareers(FALLBACK_SEED_CAREERS);
       } else {
         const data = await res.json();
         setCareers((data.careers || data).slice(0, 4));
@@ -148,35 +137,12 @@ const Assessment = () => {
         description: `Found career matches for you based on your skills.`,
       });
     } catch (err) {
-      // Fallback to frontend gemini
-      try {
-        const { geminiService } = await import('@/services/gemini');
-        const assessmentData: AssessmentData = {
-          interests: formData.skills.slice(0, 5),
-          skills: formData.skills,
-          education: 'undergraduate',
-          goals: formData.goals,
-          learningStyle: 'moderate',
-          dailyHours: 2,
-          aptitudeScores: { logical: 70, creative: 70, analytical: 70, communication: 70 },
-        };
-
-        const recommendations = await geminiService.recommendCareers(assessmentData);
-        setCareers(recommendations.slice(0, 4));
-        setStep(3);
-        toast({
-          title: 'Analysis Complete!',
-          description: `Found career matches for you.`,
-        });
-      } catch (fallbackErr) {
-        const errorMessage = fallbackErr instanceof Error ? fallbackErr.message : 'Something went wrong';
-        setError(errorMessage);
-        toast({
-          title: 'Error',
-          description: errorMessage,
-          variant: 'destructive',
-        });
-      }
+      setCareers(FALLBACK_SEED_CAREERS);
+      setStep(3);
+      toast({
+        title: 'Offline recommendations',
+        description: 'Showing curated career paths that match our roadmap library.',
+      });
     } finally {
       setIsLoading(false);
     }

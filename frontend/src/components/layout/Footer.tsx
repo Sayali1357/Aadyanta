@@ -1,7 +1,14 @@
 import { Link } from "react-router-dom";
 import { Rocket, Github, Twitter, Linkedin } from "lucide-react";
+import { useAuth } from "@/contexts/AuthContext";
 
 const Footer = () => {
+  const { userProfile, isAuthenticated } = useAuth();
+  const roadmapHref =
+    isAuthenticated && userProfile?.selectedCareer?.careerId
+      ? `/roadmap/${userProfile.selectedCareer.careerId}`
+      : "/assessment";
+
   return (
     <footer style={{ borderTop: '1px solid rgba(255,255,255,0.05)', background: '#0B0C10' }}>
       <div className="container py-12">
@@ -33,7 +40,7 @@ const Footer = () => {
             <ul className="space-y-2 text-sm" style={{ color: '#6B6F7A' }}>
               <li><Link to="/assessment" className="hover:text-[#8B7CFF] transition-colors duration-200">Career Assessment</Link></li>
               <li><Link to="/dashboard" className="hover:text-[#8B7CFF] transition-colors duration-200">Dashboard</Link></li>
-              <li><Link to="/roadmap" className="hover:text-[#8B7CFF] transition-colors duration-200">Learning Roadmaps</Link></li>
+              <li><Link to={roadmapHref} className="hover:text-[#8B7CFF] transition-colors duration-200">Learning Roadmaps</Link></li>
             </ul>
           </div>
 

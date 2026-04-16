@@ -141,6 +141,8 @@ export interface Module {
 // Roadmap (top-level collection)
 export interface Roadmap {
   _id?: string;
+  /** Canonical slug (same as career_id / quiz URL segment) */
+  roadmapId?: string;
   roadmap_id: string;
   career_id: string;
   career_name: string;
@@ -220,7 +222,7 @@ export interface UserMetadata {
 // User (lean auth-only collection)
 export interface UserProfile {
   _id?: string;
-  username: string;
+  username?: string;
   email: string;
   password?: string; // never returned by API
   metadata_id?: string;

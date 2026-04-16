@@ -8,7 +8,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Menu, X, User, LogOut, LayoutDashboard, Map } from "lucide-react";
+import { Menu, X, User, LogOut, LayoutDashboard } from "lucide-react";
 import { useState } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 
@@ -18,10 +18,10 @@ const Header = () => {
   const { user, userProfile, isAuthenticated, logout } = useAuth();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
 
-  // Derive dynamic roadmap path from user's selected career
+  // Roadmap URL — avoid duplicating `/assessment` (Career Assessment uses that path)
   const roadmapPath = userProfile?.selectedCareer?.careerId
     ? `/roadmap/${userProfile.selectedCareer.careerId}`
-    : '/assessment';
+    : '/dashboard';
 
   // Different nav links for authenticated vs unauthenticated users
   const publicNavLinks = [
@@ -30,7 +30,6 @@ const Header = () => {
 
   const authenticatedNavLinks = [
     { path: "/", label: "Home" },
-    { path: "/dashboard", label: "Dashboard" },
     { path: roadmapPath, label: "Roadmap" },
     { path: "/assessment", label: "Career Assessment" },
     { path: "/interview", label: "Mock Interview" },
@@ -39,8 +38,13 @@ const Header = () => {
 
   const navLinks = isAuthenticated ? authenticatedNavLinks : publicNavLinks;
 
-  const isActive = (path: string) => {
-    if (path.startsWith('/roadmap/')) return location.pathname.startsWith('/roadmap/');
+  const isActive = (path: string, label: string) => {
+    if (label === 'Roadmap') {
+      if (path.startsWith('/roadmap')) return location.pathname.startsWith('/roadmap');
+      if (path === '/dashboard') return location.pathname === '/dashboard';
+      return false;
+    }
+    if (path.startsWith('/roadmap')) return location.pathname.startsWith('/roadmap');
     return location.pathname === path;
   };
 
@@ -51,7 +55,7 @@ const Header = () => {
   };
 
   return (
-    <header className="sticky top-0 z-50 w-full"
+    <header className="sticky top-0 z-50 w-full relative"
       style={{
         borderBottom: '1px solid rgba(255,255,255,0.05)',
         background: 'rgba(11,12,16,0.92)',
@@ -78,9 +82,9 @@ const Header = () => {
         {/* Desktop Navigation */}
         <nav className="hidden md:flex items-center gap-1">
           {navLinks.map((link) => {
-            const active = isActive(link.path);
+            const active = isActive(link.path, link.label);
             return (
-              <Link key={link.path} to={link.path}>
+              <Link key={`nav-${link.label}`} to={link.path}>
                 <Button
                   variant={active ? "secondary" : "ghost"}
                   className={`relative transition-all duration-200 ease-out ${
@@ -173,9 +177,9 @@ const Header = () => {
           style={{ borderColor: 'rgba(255,255,255,0.05)', background: '#0D0E14' }}>
           <div className="flex flex-col gap-2">
             {navLinks.map((link) => {
-              const active = isActive(link.path);
+              const active = isActive(link.path, link.label);
               return (
-                <Link key={link.path} to={link.path} onClick={() => setIsMenuOpen(false)}>
+                <Link key={`nav-${link.label}`} to={link.path} onClick={() => setIsMenuOpen(false)}>
                   <Button
                     variant={active ? "secondary" : "ghost"}
                     className="w-full justify-start transition-all duration-200"

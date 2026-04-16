@@ -75,10 +75,15 @@ router.get('/dashboard', authMiddleware, async (req, res) => {
         // Coming next from metadata
         const upcomingTopics = metadata.coming_next || [];
 
+        const displayName =
+            user.username ||
+            (user.email && user.email.split('@')[0]) ||
+            'User';
+
         // Build response
         const dashboard = {
             user: {
-                name: user.username,
+                name: displayName,
                 email: user.email,
                 joinedAt: user.createdAt,
             },
@@ -127,10 +132,14 @@ router.get('/profile', authMiddleware, async (req, res) => {
         // Include metadata stats in profile
         const metadata = await Metadata.findOne({ user_id: req.userId }).lean();
 
+        const displayName =
+            user.username ||
+            (user.email && user.email.split('@')[0]) ||
+            'User';
+
         res.json({
             ...user,
-            // Map username to name for backward compatibility
-            name: user.username,
+            name: displayName,
             metadata: metadata || {},
         });
     } catch (error) {
@@ -538,6 +547,11 @@ router.get('/metadata-dashboard', authMiddleware, async (req, res) => {
             return res.status(404).json({ message: 'User not found' });
         }
 
+        const accountDisplayName =
+            user.username ||
+            (user.email && user.email.split('@')[0]) ||
+            'User';
+
         // 2. Get metadata (auto-create if missing)
         let metadata = await Metadata.findOne({ user_id: req.userId }).lean();
         if (!metadata) {
@@ -610,7 +624,7 @@ router.get('/metadata-dashboard', authMiddleware, async (req, res) => {
         res.json({
             account: {
                 userId: user._id,
-                username: user.username,
+                username: accountDisplayName,
                 email: user.email,
                 joinedAt: user.createdAt,
                 career: user.selectedCareer || null,

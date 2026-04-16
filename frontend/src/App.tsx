@@ -30,13 +30,18 @@ const App = () => (
     <TooltipProvider>
       <Toaster />
       <Sonner />
-      <BrowserRouter>
+      <BrowserRouter
+        future={{
+          v7_startTransition: true,
+          v7_relativeSplatPath: true,
+        }}
+      >
         <AuthProvider>
           <div className="min-h-screen flex flex-col relative">
             <BackgroundGrid />
             
             <Header />
-            <main className="flex-1">
+            <main className="flex-1 relative z-10 w-full">
               <Routes>
                 <Route path="/" element={<Index />} />
                 <Route path="/login" element={<Login />} />

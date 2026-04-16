@@ -1,11 +1,11 @@
 const mongoose = require('mongoose');
 
 const UserSchema = new mongoose.Schema({
-    // Auth & Identity
+    // Display name (optional — email is the stable identifier; multiple users share the same roadmap by career_id)
     username: {
         type: String,
-        required: true,
         trim: true,
+        default: '',
     },
     email: {
         type: String,

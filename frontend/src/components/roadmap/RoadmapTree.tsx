@@ -1,8 +1,7 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { ChevronDown, ChevronRight, CheckCircle2, Circle, Clock, BookOpen, BrainCircuit } from "lucide-react";
 import ProgressRing from "./ProgressRing";
 import { Button } from "@/components/ui/button";
-import { cn } from "@/lib/utils";
 
 interface Topic {
   id: string;
@@ -27,9 +26,22 @@ interface RoadmapTreeProps {
 }
 
 const RoadmapTree = ({ modules, onTopicComplete, onTopicClick, onQuizClick }: RoadmapTreeProps) => {
-  const [expandedModules, setExpandedModules] = useState<string[]>(
-    modules.length > 0 ? [modules[0].id] : []
-  );
+  const [expandedModules, setExpandedModules] = useState<string[]>([]);
+
+  // Expand first module when modules load (initial state only runs once — was stuck empty before)
+  useEffect(() => {
+    if (modules.length === 0) {
+      setExpandedModules([]);
+      return;
+    }
+    const firstId = modules[0].id;
+    setExpandedModules((prev) => {
+      if (prev.length === 0) return [firstId];
+      const stillValid = prev.filter((id) => modules.some((m) => m.id === id));
+      if (stillValid.length > 0) return stillValid;
+      return [firstId];
+    });
+  }, [modules]);
 
   const toggleModule = (moduleId: string) => {
     setExpandedModules((prev) =>
@@ -40,8 +52,10 @@ const RoadmapTree = ({ modules, onTopicComplete, onTopicClick, onQuizClick }: Ro
   };
 
   const getModuleProgress = (module: Module) => {
+    const n = module.topics.length;
+    if (n === 0) return 0;
     const completed = module.topics.filter((t) => t.completed).length;
-    return Math.round((completed / module.topics.length) * 100);
+    return Math.round((completed / n) * 100);
   };
 
   const getCompletedHours = (module: Module) => {
@@ -60,21 +74,29 @@ const RoadmapTree = ({ modules, onTopicComplete, onTopicClick, onQuizClick }: Ro
         return (
           <div
             key={module.id}
-            className="bg-card rounded-xl border border-border overflow-hidden animate-fade-in"
-            style={{ animationDelay: `${moduleIndex * 100}ms` }}
+            className="rounded-xl overflow-hidden animate-fade-in"
+            style={{
+              background: 'rgba(255,255,255,0.03)',
+              border: '1px solid rgba(255,255,255,0.08)',
+              animationDelay: `${moduleIndex * 100}ms`,
+            }}
           >
             {/* Module Header */}
             <button
               onClick={() => toggleModule(module.id)}
-              className="w-full flex items-center gap-4 p-4 hover:bg-secondary/50 transition-colors"
+              className="w-full flex items-center gap-4 p-4 transition-colors"
+              style={{ background: 'transparent' }}
+              onMouseEnter={e => (e.currentTarget.style.background = 'rgba(255,255,255,0.04)')}
+              onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
             >
-              <div className="flex items-center justify-center w-8 h-8 rounded-lg bg-primary/10 text-primary font-bold text-sm">
+              <div className="flex items-center justify-center w-8 h-8 rounded-lg font-bold text-sm"
+                style={{ background: 'rgba(139,124,255,0.15)', color: '#8B7CFF' }}>
                 {moduleIndex + 1}
               </div>
               
               <div className="flex-1 text-left">
-                <h3 className="font-semibold text-foreground">{module.name}</h3>
-                <div className="flex items-center gap-3 text-xs text-muted-foreground mt-1">
+                <h3 className="font-semibold" style={{ color: '#EAEAF0' }}>{module.name}</h3>
+                <div className="flex items-center gap-3 text-xs mt-1" style={{ color: '#6B6F7A' }}>
                   <span className="flex items-center gap-1">
                     <Clock className="h-3 w-3" />
                     {completedHours}/{module.totalHours}h
@@ -88,7 +110,7 @@ const RoadmapTree = ({ modules, onTopicComplete, onTopicClick, onQuizClick }: Ro
 
               <ProgressRing progress={progress} size={40} strokeWidth={3} />
 
-              <div className="text-muted-foreground">
+              <div style={{ color: '#6B6F7A' }}>
                 {isExpanded ? (
                   <ChevronDown className="h-5 w-5" />
                 ) : (
@@ -99,17 +121,17 @@ const RoadmapTree = ({ modules, onTopicComplete, onTopicClick, onQuizClick }: Ro
 
             {/* Topics List */}
             {isExpanded && (
-              <div className="border-t border-border bg-secondary/20">
+              <div style={{ borderTop: '1px solid rgba(255,255,255,0.06)', background: 'rgba(0,0,0,0.2)' }}>
                 {module.topics.map((topic, topicIndex) => (
                   <div
                     key={topic.id}
-                    className={cn(
-                      "flex items-center gap-3 px-4 py-3 pl-16 group transition-colors cursor-pointer",
-                      topic.completed
-                        ? "bg-success/5"
-                        : "hover:bg-secondary/50",
-                      topicIndex !== module.topics.length - 1 && "border-b border-border/50"
-                    )}
+                    className="flex items-center gap-3 px-4 py-3 pl-16 group cursor-pointer transition-colors"
+                    style={{
+                      background: topic.completed ? 'rgba(52,211,153,0.04)' : 'transparent',
+                      borderBottom: topicIndex !== module.topics.length - 1 ? '1px solid rgba(255,255,255,0.04)' : 'none',
+                    }}
+                    onMouseEnter={e => { if (!topic.completed) e.currentTarget.style.background = 'rgba(255,255,255,0.04)'; }}
+                    onMouseLeave={e => { e.currentTarget.style.background = topic.completed ? 'rgba(52,211,153,0.04)' : 'transparent'; }}
                     onClick={() => onTopicClick(module.id, topic.id)}
                   >
                     {/* Completion Toggle */}
@@ -121,44 +143,43 @@ const RoadmapTree = ({ modules, onTopicComplete, onTopicClick, onQuizClick }: Ro
                       className="flex-shrink-0"
                     >
                       {topic.completed ? (
-                        <CheckCircle2 className="h-5 w-5 text-success" />
+                        <CheckCircle2 className="h-5 w-5" style={{ color: '#34D399' }} />
                       ) : (
-                        <Circle className="h-5 w-5 text-muted-foreground group-hover:text-primary transition-colors" />
+                        <Circle className="h-5 w-5 transition-colors" style={{ color: '#6B6F7A' }} />
                       )}
                     </button>
 
                     {/* Topic Name */}
-                    <span
-                      className={cn(
-                        "flex-1 text-sm",
-                        topic.completed
-                          ? "text-muted-foreground line-through"
-                          : "text-foreground"
-                      )}
-                    >
+                    <span className="flex-1 text-sm"
+                      style={{ color: topic.completed ? '#6B6F7A' : '#EAEAF0',
+                        textDecoration: topic.completed ? 'line-through' : 'none' }}>
                       {topic.name}
                     </span>
 
                     {/* Hours Badge */}
-                    <span className="text-xs text-muted-foreground bg-muted px-2 py-0.5 rounded-full">
+                    <span className="text-xs px-2 py-0.5 rounded-full"
+                      style={{ background: 'rgba(255,255,255,0.06)', color: '#6B6F7A' }}>
                       {topic.hours}h
                     </span>
 
-                    <ChevronRight className="h-4 w-4 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity" />
+                    <ChevronRight className="h-4 w-4 opacity-0 group-hover:opacity-100 transition-opacity"
+                      style={{ color: '#6B6F7A' }} />
                   </div>
                 ))}
               </div>
             )}
 
-            {/* Take Module Quiz Button — always visible, outside expand/collapse */}
+            {/* Take Module Quiz Button */}
             {onQuizClick && (
-              <div className="px-4 py-3 border-t border-border/50 bg-primary/5 flex items-center justify-between">
-                <span className="text-xs text-muted-foreground">
+              <div className="px-4 py-3 flex items-center justify-between"
+                style={{ borderTop: '1px solid rgba(255,255,255,0.06)', background: 'rgba(139,124,255,0.04)' }}>
+                <span className="text-xs" style={{ color: '#6B6F7A' }}>
                   Test your knowledge for this module
                 </span>
                 <Button
                   size="sm"
-                  className="gap-2 bg-primary text-primary-foreground hover:bg-primary/90 shadow-sm"
+                  className="gap-2"
+                  style={{ background: 'linear-gradient(135deg, #8B7CFF, #B69CFF)', color: '#fff', border: 'none' }}
                   onClick={() => onQuizClick(module.id, module.name)}
                 >
                   <BrainCircuit className="h-4 w-4" />

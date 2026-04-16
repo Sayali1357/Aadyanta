@@ -1,5 +1,6 @@
 const keyManager = require('./geminiKeyManager');
 const Cache = require('../models/Cache');
+const { getRankedSeedCareers } = require('../seed/catalog/careers');
 
 /**
  * GeminiCacheService — Token-optimized AI service with:
@@ -75,7 +76,8 @@ class GeminiCacheService {
                 console.log(`✅ Cache HIT for roadmap: ${careerId}`);
                 await cached.incrementHit();
                 keyManager.trackCacheHit('roadmap');
-                return cached.data;
+                const data = cached.data || {};
+                return { ...data, roadmapId: data.roadmapId || careerId };
             }
 
             console.log(`⚠️ Cache MISS for roadmap: ${careerId}. Calling Gemini (KEY: roadmap)...`);
@@ -90,11 +92,12 @@ class GeminiCacheService {
 Rules: 4-5 modules, 4-6 topics each, 2-3 subtopics each. Include blog content (markdown), YouTube playlists, articles (GFG/MDN/W3S). FREE resources only. Indian job market focus.
 
 Return ONLY JSON:
-{"roadmap_id":"${careerId}_roadmap","career_id":"${careerId}","career_name":"${careerName}","domain":"${domain}","target_duration_weeks":12,"difficulty_level":"beginner","modules":[{"module_id":"mod_x","title":"...","description":"...","order":1,"estimated_hours":20,"topics":[{"topic_id":"top_x","title":"...","description":"...","order":1,"estimated_hours":8,"learning_objectives":["..."],"subtopics":[{"subtopic_id":"sub_x","title":"...","description":"...","order":1,"key_concepts":["..."],"difficulty":"easy"}],"content":{"blog_title":"...","blog_body":"# Markdown tutorial...","tags":["..."],"read_time_minutes":10},"youtube_resources":[{"playlist_title":"...","playlist_url":"https://youtube.com/playlist?list=...","channel_name":"...","language":"english","is_free":true}],"article_resources":[{"title":"...","url":"https://...","platform":"GeeksforGeeks","type":"tutorial","is_free":true}]}]}]}`;
+{"roadmapId":"${careerId}","roadmap_id":"${careerId}_roadmap","career_id":"${careerId}","career_name":"${careerName}","domain":"${domain}","target_duration_weeks":12,"difficulty_level":"beginner","modules":[{"module_id":"mod_x","title":"...","description":"...","order":1,"estimated_hours":20,"topics":[{"topic_id":"top_x","title":"...","description":"...","order":1,"estimated_hours":8,"learning_objectives":["..."],"subtopics":[{"subtopic_id":"sub_x","title":"...","description":"...","order":1,"key_concepts":["..."],"difficulty":"easy"}],"content":{"blog_title":"...","blog_body":"# Markdown tutorial...","tags":["..."],"read_time_minutes":10},"youtube_resources":[{"playlist_title":"...","playlist_url":"https://youtube.com/playlist?list=...","channel_name":"...","language":"english","is_free":true}],"article_resources":[{"title":"...","url":"https://...","platform":"GeeksforGeeks","type":"tutorial","is_free":true}]}]}]}`;
 
                 const { text } = await this._trackedGenerate('roadmap', prompt);
                 const jsonData = this.extractJSON(text);
                 const roadmap = JSON.parse(jsonData);
+                roadmap.roadmapId = roadmap.roadmapId || careerId;
 
                 // 3. Cache for 30 days
                 const expiresAt = new Date();
@@ -115,6 +118,7 @@ Return ONLY JSON:
         } catch (error) {
             console.error('Roadmap generation error:', error);
             return {
+                roadmapId: careerId,
                 roadmap_id: `${careerId}_roadmap`,
                 career_id: careerId,
                 career_name: careerName,
@@ -127,18 +131,9 @@ Return ONLY JSON:
         }
     }
 
-    // ─── CAREER RECOMMENDATIONS (KEY 1: roadmap) ─────────────────
+    // ─── CAREER RECOMMENDATIONS — seeded catalog only (matches DB roadmaps) ───
     async recommendCareers(assessmentData) {
-        // TOKEN OPTIMIZATION: Compact prompt
-        const prompt = `Recommend 3-5 careers based on: Interests=[${assessmentData.interests}], Skills=[${assessmentData.skills}], Education=${assessmentData.education}, Goals=${assessmentData.careerGoals}. Return JSON with careerId, name, domain, fitScore (0-100), description.`;
-
-        try {
-            const { text } = await this._trackedGenerate('roadmap', prompt);
-            return JSON.parse(this.extractJSON(text));
-        } catch (error) {
-            console.error('Career recommendation error:', error);
-            throw error;
-        }
+        return getRankedSeedCareers(assessmentData);
     }
 
     // ─── TOPIC RESOURCES (KEY 1: roadmap) ────────────────────────
