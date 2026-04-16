@@ -74,10 +74,21 @@ export default function QuizResult() {
         {result.weakTopics && result.weakTopics.length > 0 && (
           <div className="rounded-[14px] p-6 mb-8"
             style={{ background: 'rgba(255,138,108,0.05)', border: '1px solid rgba(255,138,108,0.15)' }}>
-            <h3 className="text-lg font-semibold flex items-center gap-2 mb-4"
-              style={{ fontFamily: 'Sora, Inter, sans-serif', color: '#FF8A6C' }}>
-              <BookOpen className="h-5 w-5" /> Topics to Revise
-            </h3>
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-semibold flex items-center gap-2"
+                style={{ fontFamily: 'Sora, Inter, sans-serif', color: '#FF8A6C' }}>
+                <BookOpen className="h-5 w-5" /> Topics to Revise
+              </h3>
+              <Button
+                size="sm"
+                className="gap-2 rounded-full"
+                style={{ background: 'linear-gradient(135deg, #8B7CFF, #B69CFF)', color: '#fff', border: 'none' }}
+                onClick={() => navigate('/dashboard')}
+              >
+                <Target className="h-4 w-4" />
+                Go to Roadmap
+              </Button>
+            </div>
             <div className="flex flex-wrap gap-3">
               {result.weakTopics.map((topic, i) => (
                 <span key={i} className="px-4 py-2 rounded-lg text-sm font-medium"

@@ -16,7 +16,7 @@ const Landing = () => {
 
   if (showDomainSelector) {
     return (
-      <div className="min-h-screen" style={{ background: '#0B0C10' }}>
+      <div className="min-h-screen relative z-10">
         <div className="container py-8">
           <Button
             variant="outline"
@@ -33,7 +33,7 @@ const Landing = () => {
   }
 
   return (
-    <div className="min-h-screen overflow-hidden" style={{ background: '#0B0C10' }}>
+    <div className="min-h-screen overflow-hidden relative z-10">
 
       {/* Ambient background glows */}
       <div className="fixed inset-0 pointer-events-none overflow-hidden">

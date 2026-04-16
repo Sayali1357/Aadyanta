@@ -23,7 +23,7 @@ const BackgroundGrid = () => (
     <div className="absolute top-[140px] left-[80px] text-red-500/50 font-light text-xl">+</div>
     
     {/* Soft overlay to blend into dark mode */}
-    <div className="absolute inset-0 bg-gradient-to-b from-transparent via-[#000000]/50 to-black opacity-80" />
+    <div className="absolute inset-0 bg-gradient-to-b from-transparent via-[#000000]/20 to-[#000000]/40 opacity-60" />
   </div>
 );
 

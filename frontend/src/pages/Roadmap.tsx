@@ -124,7 +124,15 @@ const Roadmap = () => {
   };
 
   const handleTopicClick = (moduleId: string, topicId: string) => {
-    navigate(`/topic/${topicId}`);
+    const module = modules.find((m) => m.id === moduleId);
+    const topic = module?.topics.find((t) => t.id === topicId);
+    navigate(`/topic/${topicId}`, {
+      state: {
+        topicName: topic?.name || topicId,
+        moduleName: module?.name || 'Learning Module',
+        domain: 'technology',
+      },
+    });
   };
 
   const handleQuizClick = (moduleId: string, moduleName: string) => {

@@ -185,10 +185,11 @@ Return ONLY JSON:
         const modelsToTry = [primaryModel, ...fallbackModels];
 
         const topicsList = topics.map(t => t.name).join(', ');
+        const primaryTopic = topics[0]?.name || moduleName;
 
         // TOKEN OPTIMIZATION: ~40% fewer input tokens vs original prompt
         const prompt = `Generate 5 MCQs for module "${moduleName}" covering: ${topicsList}.
-Return ONLY raw JSON (no markdown): {"questions":[{"question":"...","options":["A","B","C","D"],"correctAnswer":"A","topicName":"${topics[0]?.name || moduleName}"}]}`;
+Return ONLY raw JSON (no markdown): {"questions":[{"question":"...","options":["A","B","C","D"],"correctAnswer":"A","topicName":"${primaryTopic}"}]}`;
 
         let lastError;
         for (const modelName of modelsToTry) {
@@ -200,17 +201,17 @@ Return ONLY raw JSON (no markdown): {"questions":[{"question":"...","options":["
                 // Try direct parse
                 try {
                     const direct = JSON.parse(trimmed);
-                    if (direct?.questions && Array.isArray(direct.questions)) {
-                        console.log(`✅ Quiz generated with ${modelName}`);
+                    if (direct?.questions && Array.isArray(direct.questions) && direct.questions.length > 0) {
+                        console.log(`✅ Quiz generated with ${modelName}: ${direct.questions.length} questions`);
                         return direct.questions;
                     }
-                    if (Array.isArray(direct)) return direct;
+                    if (Array.isArray(direct) && direct.length > 0) return direct;
                 } catch (_) { /* try extraction */ }
 
                 const parsed = JSON.parse(this.extractJSON(trimmed));
-                if (Array.isArray(parsed)) return parsed;
-                if (parsed?.questions && Array.isArray(parsed.questions)) {
-                    console.log(`✅ Quiz generated with ${modelName}`);
+                if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+                if (parsed?.questions && Array.isArray(parsed.questions) && parsed.questions.length > 0) {
+                    console.log(`✅ Quiz generated with ${modelName}: ${parsed.questions.length} questions`);
                     return parsed.questions;
                 }
             } catch (error) {
@@ -232,12 +233,76 @@ Return ONLY raw JSON (no markdown): {"questions":[{"question":"...","options":["
             }
         }
 
-        console.error('All quiz models failed:', lastError?.message);
-        const lastStatus = lastError?.status || lastError?.statusCode;
-        if (lastStatus === 429) {
-            throw new Error('Rate limit reached. Wait 30 seconds and try again.');
-        }
-        throw new Error('Quiz generation failed. Try again in a moment.');
+        // ── FALLBACK: Generate topic-relevant questions without AI ────
+        console.warn(`⚠️ All Gemini models failed for quiz. Using fallback questions for "${primaryTopic}"`);
+        return this._generateFallbackQuiz(primaryTopic, moduleName);
+    }
+
+    /**
+     * Generate 5 fallback MCQs when Gemini is unavailable.
+     * Questions are generic but relevant to the topic name.
+     */
+    _generateFallbackQuiz(topicName, moduleName) {
+        const questions = [
+            {
+                question: `Which of the following best describes the primary purpose of ${topicName}?`,
+                options: [
+                    `To provide a foundational understanding of core concepts in ${topicName}`,
+                    `To replace all other technologies in the field`,
+                    `To serve only as a theoretical framework with no practical use`,
+                    `To be used exclusively in academic settings`,
+                ],
+                correctAnswer: `To provide a foundational understanding of core concepts in ${topicName}`,
+                topicName,
+            },
+            {
+                question: `What is a key benefit of learning ${topicName} for career growth?`,
+                options: [
+                    `It has no relevance to the job market`,
+                    `It builds skills that are highly sought after in the industry`,
+                    `It is only useful for writing research papers`,
+                    `It is already obsolete and not worth learning`,
+                ],
+                correctAnswer: `It builds skills that are highly sought after in the industry`,
+                topicName,
+            },
+            {
+                question: `When studying ${topicName}, which approach is most effective?`,
+                options: [
+                    `Only reading documentation without practice`,
+                    `Skipping fundamentals and jumping to advanced topics`,
+                    `Combining theory with hands-on projects and practical exercises`,
+                    `Memorizing syntax without understanding concepts`,
+                ],
+                correctAnswer: `Combining theory with hands-on projects and practical exercises`,
+                topicName,
+            },
+            {
+                question: `Which of these is a common prerequisite for mastering ${topicName}?`,
+                options: [
+                    `Understanding the basic principles and terminology of the field`,
+                    `Having 10+ years of professional experience`,
+                    `A PhD in the subject matter`,
+                    `No prerequisite knowledge is needed at any level`,
+                ],
+                correctAnswer: `Understanding the basic principles and terminology of the field`,
+                topicName,
+            },
+            {
+                question: `How does ${topicName} fit within the broader scope of ${moduleName}?`,
+                options: [
+                    `It is completely unrelated to the module`,
+                    `It serves as a building block that connects to other topics in the module`,
+                    `It contradicts all other topics in the module`,
+                    `It should be studied in isolation from the rest`,
+                ],
+                correctAnswer: `It serves as a building block that connects to other topics in the module`,
+                topicName,
+            },
+        ];
+
+        console.log(`📝 Fallback quiz generated: 5 questions for "${topicName}"`);
+        return questions;
     }
 
     // ─── UTILITIES ───────────────────────────────────────────────

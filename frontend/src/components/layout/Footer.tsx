@@ -10,7 +10,7 @@ const Footer = () => {
       : "/assessment";
 
   return (
-    <footer style={{ borderTop: '1px solid rgba(255,255,255,0.05)', background: '#0B0C10' }}>
+    <footer style={{ borderTop: '1px solid rgba(255,255,255,0.05)', background: 'rgba(11,12,16,0.85)', backdropFilter: 'blur(12px)' }}>
       <div className="container py-12">
         <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
           {/* Brand */}

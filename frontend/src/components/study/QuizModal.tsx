@@ -1,8 +1,8 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { QuizQuestion, quizService } from '@/services/quizService';
-import { Loader2, CheckCircle2, XCircle, AlertCircle } from 'lucide-react';
+import { Loader2, CheckCircle2, XCircle, AlertCircle, RotateCcw } from 'lucide-react';
 import { Progress } from '@/components/ui/progress';
 
 // Local result type for this modal's evaluation
@@ -24,27 +24,51 @@ interface QuizModalProps {
 const QuizModal: React.FC<QuizModalProps> = ({ topicName, domain, onComplete, onClose }) => {
   const [questions, setQuestions] = useState<QuizQuestion[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [answers, setAnswers] = useState<Record<number, number>>({});
   const [isSubmitted, setIsSubmitted] = useState(false);
   const [result, setResult] = useState<QuizEvalResult | null>(null);
 
-  useEffect(() => {
-    const fetchQuiz = async () => {
-      setLoading(true);
-      try {
-        // generateQuiz expects (moduleName, topics[])
-        const topics = [{ id: topicName.toLowerCase().replace(/\s+/g, '_'), name: topicName }];
-        const generated = await quizService.generateQuiz(topicName, topics);
-        setQuestions(generated);
-      } catch (err) {
-        console.error('Quiz generation failed:', err);
-      } finally {
-        setLoading(false);
+  const fetchQuiz = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+    setQuestions([]);
+    setCurrentIndex(0);
+    setAnswers({});
+    setIsSubmitted(false);
+    setResult(null);
+
+    try {
+      // generateQuiz expects (moduleName, topics[])
+      const topics = [{ id: topicName.toLowerCase().replace(/\s+/g, '_'), name: topicName }];
+      const generated = await quizService.generateQuiz(topicName, topics);
+
+      if (!generated || generated.length === 0) {
+        throw new Error('No questions were generated. The AI service may be temporarily unavailable.');
       }
-    };
+
+      // Validate that each question has the required fields
+      const validQuestions = generated.filter(
+        (q) => q.question && Array.isArray(q.options) && q.options.length >= 2 && q.correctAnswer
+      );
+
+      if (validQuestions.length === 0) {
+        throw new Error('Generated questions were malformed. Please try again.');
+      }
+
+      setQuestions(validQuestions);
+    } catch (err: any) {
+      console.error('Quiz generation failed:', err);
+      setError(err.message || 'Failed to generate quiz. Please try again.');
+    } finally {
+      setLoading(false);
+    }
+  }, [topicName]);
+
+  useEffect(() => {
     fetchQuiz();
-  }, [topicName, domain]);
+  }, [fetchQuiz]);
 
   const handleSelectOption = (questionIndex: number, optionIndex: number) => {
     if (isSubmitted) return;
@@ -99,19 +123,58 @@ const QuizModal: React.FC<QuizModalProps> = ({ topicName, domain, onComplete, on
     if (result) onComplete(result);
   };
 
+  // ── LOADING STATE ─────────────────────────────────────────
   if (loading) {
     return (
       <div className="fixed inset-0 z-50 bg-black/60 flex items-center justify-center p-4">
         <Card className="w-full max-w-lg" style={{ background: '#12141C', border: '1px solid rgba(255,255,255,0.05)' }}>
           <CardContent className="p-8 flex flex-col items-center justify-center space-y-4">
             <Loader2 className="h-10 w-10 text-primary animate-spin" />
-            <p className="text-lg font-medium" style={{ color: '#A0A3B1' }}>Generating personalized quiz for {topicName}...</p>
+            <p className="text-lg font-medium" style={{ color: '#A0A3B1' }}>
+              Generating quiz for <span style={{ color: '#B69CFF' }}>{topicName}</span>...
+            </p>
+            <p className="text-sm" style={{ color: '#6B6F7A' }}>
+              This may take a few seconds
+            </p>
           </CardContent>
         </Card>
       </div>
     );
   }
 
+  // ── ERROR STATE ───────────────────────────────────────────
+  if (error || questions.length === 0) {
+    return (
+      <div className="fixed inset-0 z-50 bg-black/60 flex items-center justify-center p-4">
+        <Card className="w-full max-w-lg" style={{ background: '#12141C', border: '1px solid rgba(255,255,255,0.05)' }}>
+          <CardContent className="p-8 flex flex-col items-center justify-center space-y-4">
+            <AlertCircle className="h-12 w-12" style={{ color: '#FF8A6C' }} />
+            <h3 className="text-lg font-semibold" style={{ color: '#EAEAF0' }}>
+              Quiz Generation Failed
+            </h3>
+            <p className="text-sm text-center leading-relaxed" style={{ color: '#A0A3B1' }}>
+              {error || 'Could not generate quiz questions for this topic.'}
+            </p>
+            <div className="flex items-center gap-3 pt-2">
+              <Button
+                onClick={fetchQuiz}
+                className="gap-2"
+                style={{ background: 'linear-gradient(135deg, #8B7CFF, #B69CFF)', color: '#fff' }}
+              >
+                <RotateCcw className="h-4 w-4" />
+                Retry
+              </Button>
+              <Button variant="ghost" onClick={onClose} style={{ color: '#6B6F7A' }}>
+                Cancel
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
+  // ── RESULTS STATE ─────────────────────────────────────────
   if (isSubmitted && result) {
     return (
       <div className="fixed inset-0 z-50 bg-black/60 flex items-center justify-center p-4">
@@ -167,6 +230,7 @@ const QuizModal: React.FC<QuizModalProps> = ({ topicName, domain, onComplete, on
     );
   }
 
+  // ── QUIZ QUESTIONS STATE ──────────────────────────────────
   const currentQ = questions[currentIndex];
 
   return (
@@ -179,7 +243,17 @@ const QuizModal: React.FC<QuizModalProps> = ({ topicName, domain, onComplete, on
               Question {currentIndex + 1} of {questions.length}
             </span>
           </div>
-          <CardTitle className="text-xl leading-relaxed" style={{ fontFamily: 'Sora, Inter, sans-serif', color: '#EAEAF0' }}>
+          {/* Progress bar for question navigation */}
+          <div className="w-full h-1 rounded-full mt-2" style={{ background: 'rgba(255,255,255,0.05)' }}>
+            <div
+              className="h-full rounded-full transition-all duration-300"
+              style={{
+                width: `${((currentIndex + 1) / questions.length) * 100}%`,
+                background: 'linear-gradient(90deg, #8B7CFF, #B69CFF)',
+              }}
+            />
+          </div>
+          <CardTitle className="text-xl leading-relaxed mt-3" style={{ fontFamily: 'Sora, Inter, sans-serif', color: '#EAEAF0' }}>
             {currentQ?.question}
           </CardTitle>
         </CardHeader>

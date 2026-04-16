@@ -22,6 +22,7 @@ import EscapeRoom from "./pages/EscapeRoom";
 import Quiz from "./pages/Quiz";
 import QuizResult from "./pages/QuizResult";
 import MetadataDashboard from "./pages/MetadataDashboard";
+import LearningSessionTimer from "@/components/session/LearningSessionTimer";
 
 const queryClient = new QueryClient();
 
@@ -139,6 +140,7 @@ const App = () => (
               </Routes>
             </main>
             <Footer />
+            <LearningSessionTimer />
           </div>
         </AuthProvider>
       </BrowserRouter>

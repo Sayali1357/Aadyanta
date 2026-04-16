@@ -321,7 +321,7 @@ const Dashboard = () => {
                           +100 LP
                         </span>
                       </div>
-                      <Link to={`/topic/${todaysTopic.topic_id}`}>
+                      <Link to={`/topic/${todaysTopic.topic_id}`} state={{ topicName: todaysTopic.title, moduleName: todaysTopic.module_name, domain: 'technology' }}>
                         <Button className="bg-foreground text-background hover:bg-foreground/90 font-semibold group rounded-full px-6">
                           <Play className="h-4 w-4 mr-2" />
                           Execute Module
@@ -461,6 +461,7 @@ const Dashboard = () => {
                       <Link
                         key={index}
                         to={`/topic/${topic.topic_id}`}
+                        state={{ topicName: topic.title, moduleName: topic.module_name, domain: 'technology' }}
                         className="flex items-center gap-4 p-3 rounded-xl border border-border/40 bg-secondary/10 hover:bg-secondary/30 transition-colors group cursor-pointer"
                       >
                         <div className="w-8 h-8 rounded-lg bg-background border border-border/50 flex items-center justify-center text-sm font-semibold text-muted-foreground group-hover:text-primary transition-colors shadow-inner">
