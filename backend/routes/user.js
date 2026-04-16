@@ -431,8 +431,70 @@ router.post('/progress', authMiddleware, async (req, res) => {
                 },
             });
         } else {
-            await session.abortTransaction();
-            res.json({ message: 'No changes made' });
+            // ── Un-completing a topic ────────────────────────────
+            const existingIdx = metadata.completed_topics.findIndex(
+                (t) => t.topic_id === topicId
+            );
+
+            if (existingIdx !== -1) {
+                metadata.completed_topics.splice(existingIdx, 1);
+                metadata.topics_completed = Math.max(0, metadata.topics_completed - 1);
+
+                // Recalculate progress
+                const user = await User.findById(req.userId).session(session);
+                if (user?.selectedCareer?.careerId) {
+                    const roadmap = await Roadmap.findOne({
+                        career_id: user.selectedCareer.careerId,
+                    }).session(session);
+
+                    if (roadmap) {
+                        const totalTopics = roadmap.modules?.reduce(
+                            (sum, mod) => sum + (mod.topics?.length || 0),
+                            0
+                        ) || 0;
+
+                        if (totalTopics > 0) {
+                            metadata.progress = Math.round(
+                                (metadata.topics_completed / totalTopics) * 100
+                            );
+                        }
+
+                        // Recalculate coming_next
+                        const completedIds = metadata.completed_topics.map(t => t.topic_id);
+                        const nextTopics = [];
+
+                        for (const mod of (roadmap.modules || [])) {
+                            for (const topic of (mod.topics || [])) {
+                                if (!completedIds.includes(topic.topic_id)) {
+                                    nextTopics.push({
+                                        topic_id: topic.topic_id,
+                                        title: topic.title,
+                                        module_name: mod.title,
+                                        estimated_hours: topic.estimated_hours,
+                                    });
+                                    if (nextTopics.length >= 3) break;
+                                }
+                            }
+                            if (nextTopics.length >= 3) break;
+                        }
+
+                        metadata.coming_next = nextTopics;
+                    }
+                }
+
+                metadata.pushRecentActivity(topicName || topicId, 'uncompleted');
+                await metadata.save({ session });
+            }
+
+            await session.commitTransaction();
+            res.json({
+                message: 'Topic uncompleted',
+                progress: {
+                    topics_completed: metadata.topics_completed,
+                    progress: metadata.progress,
+                    coming_next: metadata.coming_next,
+                },
+            });
         }
     } catch (error) {
         await session.abortTransaction();

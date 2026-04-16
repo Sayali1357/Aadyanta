@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import StatsCard from "@/components/dashboard/StatsCard";
 import GapAnalysisCard from "@/components/dashboard/GapAnalysisCard";
+import KaizenRevision from "@/components/dashboard/KaizenRevision";
 import ProgressRing from "@/components/roadmap/ProgressRing";
 import { GlassCard } from "@/components/ui/glass-card";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -411,6 +412,11 @@ const Dashboard = () => {
           {/* Phase 7 Gap Analysis */}
           <motion.div variants={itemVariants}>
             <GapAnalysisCard />
+          </motion.div>
+
+          {/* Kaizen Spaced Repetition Revision */}
+          <motion.div variants={itemVariants}>
+            <KaizenRevision />
           </motion.div>
 
           {/* Activity & Upcoming Bento Row */}

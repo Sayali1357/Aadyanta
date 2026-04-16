@@ -124,6 +124,119 @@ const Landing = () => {
         </div>
       </section>
 
+      {/* Kaizen Spaced Repetition Section */}
+      <section className="relative container px-4 py-20">
+        <div className="max-w-5xl mx-auto">
+          <div className="rounded-[20px] relative overflow-hidden p-8 md:p-12"
+            style={{
+              background: 'linear-gradient(135deg, #0D0E14 0%, #12141C 50%, #1a1040 100%)',
+              border: '1px solid rgba(139,124,255,0.2)',
+              boxShadow: '0 0 60px -20px rgba(139,124,255,0.15)',
+            }}>
+
+            {/* Top glow line */}
+            <div className="absolute inset-x-0 top-0 h-px"
+              style={{ background: 'linear-gradient(90deg, transparent, #8B7CFF, transparent)' }} />
+
+            <div className="grid md:grid-cols-2 gap-10 items-center">
+              {/* Left — Text */}
+              <div>
+                <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full mb-5"
+                  style={{ background: 'rgba(139,124,255,0.1)', border: '1px solid rgba(139,124,255,0.2)' }}>
+                  <span className="text-sm">🧘</span>
+                  <span className="text-xs font-semibold tracking-wide uppercase" style={{ color: '#B69CFF' }}>
+                    Kaizen Method
+                  </span>
+                </div>
+
+                <h2 className="text-3xl md:text-4xl font-bold mb-4 leading-tight"
+                  style={{ fontFamily: 'Sora, Inter, sans-serif', color: '#EAEAF0' }}>
+                  MASTER THROUGH{' '}
+                  <span style={{
+                    background: 'linear-gradient(135deg, #8B7CFF, #00E5FF)',
+                    WebkitBackgroundClip: 'text',
+                    WebkitTextFillColor: 'transparent',
+                    backgroundClip: 'text',
+                  }}>
+                    SPACED REPETITION
+                  </span>
+                </h2>
+
+                <p className="text-sm leading-relaxed mb-6" style={{ color: '#A0A3B1' }}>
+                  After completing your roadmap, unlock the Kaizen revision system — a scientifically proven
+                  spaced repetition method that strengthens long-term memory through decreasing flashcards
+                  and increasing time gaps between sessions.
+                </p>
+
+                <div className="flex flex-wrap gap-3">
+                  {[
+                    { icon: '📉', text: 'Fewer cards each day' },
+                    { icon: '⏳', text: 'Growing intervals' },
+                    { icon: '🧠', text: 'Deeper retention' },
+                  ].map((tag, i) => (
+                    <span key={i} className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium"
+                      style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.06)', color: '#A0A3B1' }}>
+                      {tag.icon} {tag.text}
+                    </span>
+                  ))}
+                </div>
+              </div>
+
+              {/* Right — Visual Progression */}
+              <div className="space-y-3">
+                {[
+                  { day: 'Day 1', modules: 8, gap: '1 day gap', opacity: 1, width: '100%' },
+                  { day: 'Day 2', modules: 7, gap: '2 day gap', opacity: 0.88, width: '87.5%' },
+                  { day: 'Day 3', modules: 6, gap: '3 day gap', opacity: 0.76, width: '75%' },
+                  { day: 'Day 4', modules: 5, gap: '4 day gap', opacity: 0.64, width: '62.5%' },
+                  { day: 'Day 5', modules: 4, gap: '5 day gap', opacity: 0.52, width: '50%' },
+                  { day: '...', modules: null, gap: '...', opacity: 0.3, width: '30%' },
+                  { day: 'Final', modules: 1, gap: 'Mastered ✅', opacity: 0.9, width: '12.5%' },
+                ].map((step, i) => (
+                  <div key={i} className="flex items-center gap-3">
+                    <span className="text-[11px] font-semibold w-12 text-right flex-shrink-0"
+                      style={{ color: step.day === 'Final' ? '#56D364' : '#6B6F7A' }}>
+                      {step.day}
+                    </span>
+                    <div className="flex-1 relative">
+                      <div className="h-6 rounded-lg flex items-center px-3 transition-all duration-500"
+                        style={{
+                          width: step.width,
+                          background: step.day === 'Final'
+                            ? 'linear-gradient(90deg, rgba(86,211,100,0.25), rgba(86,211,100,0.1))'
+                            : step.day === '...'
+                            ? 'transparent'
+                            : `linear-gradient(90deg, rgba(139,124,255,${0.08 + step.opacity * 0.2}), rgba(182,156,255,${0.04 + step.opacity * 0.1}))`,
+                          border: step.day === '...'
+                            ? 'none'
+                            : step.day === 'Final'
+                            ? '1px solid rgba(86,211,100,0.2)'
+                            : '1px solid rgba(139,124,255,0.12)',
+                          opacity: step.opacity,
+                        }}>
+                        {step.modules !== null && (
+                          <span className="text-[10px] font-bold whitespace-nowrap"
+                            style={{ color: step.day === 'Final' ? '#56D364' : '#B69CFF' }}>
+                            {step.modules} module{step.modules !== 1 ? 's' : ''}
+                          </span>
+                        )}
+                        {step.day === '...' && (
+                          <span className="text-xs" style={{ color: '#4a4d55' }}>⋯</span>
+                        )}
+                      </div>
+                    </div>
+                    <span className="text-[10px] w-16 flex-shrink-0"
+                      style={{ color: step.day === 'Final' ? '#56D364' : '#4a4d55' }}>
+                      {step.gap}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
       {/* Features Section */}
       <section className="relative container px-4 py-20">
         <div className="max-w-6xl mx-auto">

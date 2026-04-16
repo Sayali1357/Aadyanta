@@ -27,7 +27,7 @@ const GapAnalysis = () => {
   useEffect(() => {
     const fetchAnalysis = async () => {
       try {
-        const token = localStorage.getItem('token');
+        const token = localStorage.getItem('auth_token');
         const res = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3001/api'}/user/gap-analysis`, {
           headers: {
             ...(token ? { 'Authorization': `Bearer ${token}` } : {})

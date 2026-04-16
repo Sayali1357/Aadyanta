@@ -53,6 +53,7 @@ app.use('/api/user', require('./routes/user'));
 app.use('/api/roadmap', require('./routes/roadmap'));
 app.use('/api/interview', require('./routes/interviewRoutes'));
 app.use('/api/quiz', require('./routes/quiz'));
+app.use('/api/kaizen', require('./routes/kaizen'));
 
 // MongoDB Connection
 const connectDB = async () => {

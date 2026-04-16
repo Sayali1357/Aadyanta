@@ -62,18 +62,36 @@ const Roadmap = () => {
       setIsLoading(true);
       setError(null);
       try {
-        const data = (await authService.getRoadmap(id)) as Record<string, unknown>;
+        // Fetch roadmap and metadata in parallel
+        const token = localStorage.getItem('auth_token');
+        const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:3001/api';
+
+        const [data, metadataRes] = await Promise.all([
+          authService.getRoadmap(id) as Promise<Record<string, unknown>>,
+          fetch(`${apiUrl}/user/metadata`, {
+            headers: token ? { Authorization: `Bearer ${token}` } : {},
+          }).then(r => r.ok ? r.json() : { completed_topics: [] }).catch(() => ({ completed_topics: [] })),
+        ]);
+
+        // Build a Set of completed topic IDs from metadata
+        const completedTopicIds = new Set<string>(
+          (metadataRes.completed_topics || []).map((ct: any) => ct.topic_id)
+        );
+
         // Normalize backend response — API uses module_id, topic_id, career_name, estimated_hours
         const rawModules = extractRawModules(data);
         const modulesNorm: Module[] = rawModules.map((m: any, mi: number) => {
-          const topics = (m.topics || []).map((t: any, ti: number) => ({
-            id: String(
+          const topics = (m.topics || []).map((t: any, ti: number) => {
+            const topicId = String(
               t.topic_id ?? t.topicId ?? t.id ?? t.title ?? `${mi}-topic-${ti}`
-            ),
-            name: t.title ?? t.name ?? "Topic",
-            hours: t.estimated_hours ?? t.estimatedHours ?? t.hours ?? 1,
-            completed: Boolean(t.completed),
-          }));
+            );
+            return {
+              id: topicId,
+              name: t.title ?? t.name ?? "Topic",
+              hours: t.estimated_hours ?? t.estimatedHours ?? t.hours ?? 1,
+              completed: completedTopicIds.has(topicId),
+            };
+          });
           const modHours =
             m.estimated_hours ??
             m.estimatedHours ??
@@ -108,19 +126,70 @@ const Roadmap = () => {
     fetchRoadmap();
   }, [id]);
 
-  const handleTopicComplete = (moduleId: string, topicId: string) => {
+  const handleTopicComplete = async (moduleId: string, topicId: string) => {
+    // Find the topic to check current state
+    const module = modules.find((m) => m.id === moduleId);
+    const topic = module?.topics.find((t) => t.id === topicId);
+    if (!topic) return;
+
+    const newCompletedState = !topic.completed;
+
+    // Optimistic UI update
     setModules((prev) =>
-      prev.map((module) =>
-        module.id === moduleId
+      prev.map((m) =>
+        m.id === moduleId
           ? {
-              ...module,
-              topics: module.topics.map((topic) =>
-                topic.id === topicId ? { ...topic, completed: !topic.completed } : topic
+              ...m,
+              topics: m.topics.map((t) =>
+                t.id === topicId ? { ...t, completed: newCompletedState } : t
               ),
             }
-          : module
+          : m
       )
     );
+
+    // Persist to backend
+    try {
+      const token = localStorage.getItem('auth_token');
+      if (!token) {
+        console.error('No auth token — cannot save progress');
+        return;
+      }
+      const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:3001/api';
+      const res = await fetch(`${apiUrl}/user/progress`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          topicId,
+          topicName: topic.name,
+          completed: newCompletedState,
+          timeSpent: 0,
+        }),
+      });
+      if (!res.ok) {
+        console.error('Failed to save progress:', res.status);
+        // Revert on failure
+        setModules((prev) =>
+          prev.map((m) =>
+            m.id === moduleId
+              ? {
+                  ...m,
+                  topics: m.topics.map((t) =>
+                    t.id === topicId ? { ...t, completed: !newCompletedState } : t
+                  ),
+                }
+              : m
+          )
+        );
+      } else {
+        console.log('✅ Progress saved:', topic.name, newCompletedState ? 'completed' : 'uncompleted');
+      }
+    } catch (error) {
+      console.error('Error saving progress:', error);
+    }
   };
 
   const handleTopicClick = (moduleId: string, topicId: string) => {

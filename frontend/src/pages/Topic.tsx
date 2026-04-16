@@ -142,26 +142,38 @@ const Topic = () => {
   const handleQuizComplete = async (quizResult: any) => {
     setShowQuiz(false);
     try {
-      const token = localStorage.getItem('token');
-      await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3001/api'}/user/progress`, {
+      const token = localStorage.getItem('auth_token');
+      if (!token) {
+        console.error('No auth token found — user may not be logged in');
+        setCompleted(true);
+        return;
+      }
+      const res = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3001/api'}/user/progress`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+          'Authorization': `Bearer ${token}`,
         },
         body: JSON.stringify({
           topicId: id,
           topicName: topicName,
           completed: true,
-          timeSpent: 30, // simulated
+          timeSpent: 30,
           attentionData: attentionData,
-          quizResult: quizResult // Phase 6 data
-        })
+          quizResult: quizResult,
+        }),
       });
+
+      if (!res.ok) {
+        const errData = await res.json().catch(() => ({}));
+        console.error('Progress save failed:', res.status, errData);
+      } else {
+        console.log('✅ Topic progress saved:', topicName);
+      }
       setCompleted(true);
     } catch (error) {
       console.error('Error saving progress with quiz', error);
-      setCompleted(true); // fallback UI update
+      setCompleted(true);
     }
   };
 
